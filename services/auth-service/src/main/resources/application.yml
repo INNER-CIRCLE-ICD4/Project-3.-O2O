@@ -2,12 +2,21 @@ spring:
   application:
     name: auth-service
 
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
 
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:authdb
     username: sa
     password:
+
+
   security:
     oauth2:
         client:
@@ -38,4 +47,5 @@ spring:
               user-name-attribute: response
 
 
-
+jwt:
+  secret: 59fa5382544d33f918331b346e3906e6ad99f4b6fd29e07f7889b5369b82c02e0966cfafd4779d88f93f521d5e5aaee83e6438542075b751db6ddc2934345a0c
