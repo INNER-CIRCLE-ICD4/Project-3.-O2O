@@ -1,0 +1,33 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: your-local-google-client-id
+            client-secret: your-local-google-client-secret
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - email
+              - profile
+          apple:
+            client-id: your-local-apple-client-id
+            client-secret: your-local-apple-client-secret
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - name
+              - email
+            authorization-grant-type: authorization_code
+        provider:
+          apple:
+            authorization-uri: https://appleid.apple.com/auth/authorize
+            token-uri: https://appleid.apple.com/auth/token
+            user-info-uri: https://appleid.apple.com/auth/userinfo
+
+jwt:
+  secret: local-development-secret-key-for-jwt-signing-32-chars
+
+logging:
+  level:
+    com.ddakta.auth: DEBUG
+    org.springframework.security: DEBUG

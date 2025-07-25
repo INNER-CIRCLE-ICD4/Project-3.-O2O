@@ -1,0 +1,46 @@
+spring:
+  datasource:
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: jdbc:tc:postgresql:15:///test_db
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-google-client-id
+            client-secret: test-google-client-secret
+            redirect-uri: "http://localhost:8080/login/oauth2/code/{registrationId}"
+            scope:
+              - email
+              - profile
+          apple:
+            client-id: test-apple-client-id
+            client-secret: test-apple-client-secret
+            redirect-uri: "http://localhost:8080/login/oauth2/code/{registrationId}"
+            scope:
+              - name
+              - email
+            authorization-grant-type: authorization_code
+        provider:
+          apple:
+            authorization-uri: https://appleid.apple.com/auth/authorize
+            token-uri: https://appleid.apple.com/auth/token
+            user-info-uri: https://appleid.apple.com/auth/userinfo
+
+jwt:
+  secret: test-secret-key-that-is-at-least-32-characters-long
+  access-token-validity: 900000
+  refresh-token-validity: 604800000
+
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    com.ddakta.auth: DEBUG
