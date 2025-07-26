@@ -2,7 +2,6 @@ package com.ddakta.domain.user
 
 import com.ddakta.domain.DomainTestConfig
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.assertj.core.api.Assertions.assertThat
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
@@ -15,11 +14,11 @@ class UserRepositoryTest @Autowired constructor(
 ) {
     @Test
     fun `username 으로 저장 후 조회가 가능해야 한다`() {
-        val user = User.create("me_123", "홍길동", "hong@x.com", UserType.PASSENGER)
-        userRepository.save(user)
+        // fixture 이용
+        val savedUser = userRepository.save(UserFixture.PASSENGER)
 
-        val found = userRepository.findByUsername("me_123")
-        assertThat(found).isNotNull()
-        assertThat(found?.email).isEqualTo("hong@x.com")
+        val found = userRepository.findByUsername(UserFixture.PASSENGER.username)
+        assertThat(found).isNotNull
+        assertThat(found?.email).isEqualTo(UserFixture.PASSENGER.email)
     }
 }
