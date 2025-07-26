@@ -9,5 +9,6 @@ include(
     "services:notification-service",
     "common:domain",
     "common:events",
-    "common:utils"
+    "common:utils",
+    "common:user-client"
 )
