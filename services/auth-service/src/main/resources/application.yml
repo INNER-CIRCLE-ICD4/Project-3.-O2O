@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auth_db
+    username: auth_user
+    password: auth_password
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  redis:
+    host: localhost
+    port: 6379
+
+  cloud:
+    discovery:
+      enabled: false       # DiscoveryClient 전체 비활성화
+    eureka:
+      client:
+        register-with-eureka: false   # Eureka 서버에 등록하지 않음
+        fetch-registry: false         # 레지스트리 조회하지 않음
+
+
+kakao:
+  oauth:
+    client-id: ${KAKAO_CLIENT_ID}
+    client-secret: ${KAKAO_CLIENT_SECRET}
+    redirect-uri: http://localhost:8080/api/v1/auth/kakao/callback
+    authorize-uri: https://kauth.kakao.com/oauth/authorize
+    token-uri: https://kauth.kakao.com/oauth/token
+    user-info-uri: https://kapi.kakao.com/v2/user/me
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiry-seconds: 900    # 15분
+  refresh-token-expiry-seconds: 604800 # 7일
