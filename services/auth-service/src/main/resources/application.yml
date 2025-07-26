@@ -1,0 +1,5 @@
+server:
+  port: 8083
+
+jwt:
+  secret: "djf239dicnwl492k39d7ck39cjw923l1cneksu38s3k5s23afs231ad23a"
