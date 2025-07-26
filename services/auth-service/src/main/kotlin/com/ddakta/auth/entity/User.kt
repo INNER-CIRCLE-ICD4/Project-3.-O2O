@@ -1,11 +1,8 @@
 package com.ddakta.auth.entity
 
-import com.ddakta.auth.dto.UserDto
-import jakarta.persistence.Entity
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
-import jakarta.persistence.Table
+import com.ddakta.auth.dto.LoginUserRequest
+import jakarta.persistence.*
+import org.hibernate.annotations.NaturalId
 
 @Entity
 @Table(name = "users")
@@ -15,24 +12,36 @@ class User(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
 
-    val username: String,
+    @NaturalId
+    val email: String,
 
     val name: String,
 
-    val email: String,
+    @Enumerated(EnumType.STRING)
+    val role: UserRole,
 
-    val role: String
+    val googleId: String?,
+    val naverId: String?,
 
-) {
+    val oAuthList: MutableList<String>,
+
+    ) {
     companion object {
-        fun register(request: UserDto): User {
+        fun register(request: LoginUserRequest): User {
+
             return User(
                 id = null,
-                username =  request.username,
-                name = request.name,
                 email = request.email,
-                role = request.role
+                name = request.name,
+                role = UserRole.PENDING_REGISTRATION,
+                googleId = request.userId.takeIf { it.equals("google", ignoreCase = true) },
+                naverId = request.userId.takeIf { it.equals("naver", ignoreCase = true) },
+                oAuthList = mutableListOf(request.oAuthType)
             )
         }
+    }
+
+    fun oAuthIntegration(oauth: String) {
+        this.oAuthList.add(oauth)
     }
 }

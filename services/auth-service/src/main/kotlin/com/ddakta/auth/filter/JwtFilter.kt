@@ -1,6 +1,6 @@
 package com.ddakta.auth.filter
 
-import com.ddakta.auth.dto.UserDto
+import com.ddakta.auth.entity.UserDto
 import com.ddakta.auth.oauth.OAuth2UserDetails
 import com.ddakta.auth.service.JwtService
 import jakarta.servlet.FilterChain
@@ -21,21 +21,25 @@ class JwtFilter(
         filterChain: FilterChain
     ) {
 
-        val token = request.cookies?.firstOrNull { it.name == "Authorization" }?.value?: return filterChain.doFilter(request, response)
+        val token = request.cookies
+            ?.firstOrNull { it.name == "Authorization"}
+            ?.value?.takeIf { it.startsWith("Bearer ") }
+            ?: return filterChain.doFilter(request, response)
+
+
         val claims = jwtService.validateToken(token)
-
-        // TODO: 이름과 이메일은 나중에?
-        val userDto = UserDto(
+        val user = UserDto(
             username = jwtService.getUsername(claims),
-            name = "",
+            name = jwtService.getUsername(claims),
             role = jwtService.getRole(claims),
-            email = ""
+            email = jwtService.getEmail(claims)
         )
-        val oAuth2User = OAuth2UserDetails(userDto)
 
+
+        val oAuth2User = OAuth2UserDetails(user)
         val authToken: Authentication = UsernamePasswordAuthenticationToken(oAuth2User, null, oAuth2User.authorities)
-
         SecurityContextHolder.getContext().authentication = authToken
+
         filterChain.doFilter(request, response)
     }
 }

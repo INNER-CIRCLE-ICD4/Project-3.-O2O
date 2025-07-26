@@ -1,16 +1,20 @@
 package com.ddakta.auth.oauth
 
+import com.ddakta.auth.entity.UserRole
 import com.ddakta.auth.service.JwtService
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
 import org.springframework.stereotype.Component
 
 @Component
 class OAuth2LoginSuccessHandler(
-    val jwtService: JwtService
+    val jwtService: JwtService,
+    @Value("\${client.web.successUrl}")
+    val successUrl: String
 ): SimpleUrlAuthenticationSuccessHandler() {
     override fun onAuthenticationSuccess(
         request: HttpServletRequest,
@@ -18,16 +22,17 @@ class OAuth2LoginSuccessHandler(
         authentication: Authentication
     ) {
 
-        // TODO: 성공 시 url로 반환하도록...
-        //  근데 앱의 경우는..? FireBase 연동? Deep Link?
-        val successUrl = "http://localhost:8081/"
-
         val userDetails: OAuth2UserDetails = authentication.principal as OAuth2UserDetails
-        val role = userDetails.authorities?.firstOrNull()?.authority ?: "ROLE_USER"
+        val role  = userDetails.authorities!!.firstOrNull()?.authority ?: UserRole.PASSENGER.type
 
-        val token = jwtService.createToken(userDetails.getUsername(), role)
+        val access = jwtService.createAccessToken(userDetails.getUsername(), role)
+        val refresh = jwtService.createRefreshToken(userDetails.getUsername(), role)
 
-        response.addCookie(createCookie("Authorization", token))
+        //TODO :refresh 저장
+
+
+        //access 전달
+        response.addCookie(createCookie("Authorization", "Bearer $access"))
         response.sendRedirect(successUrl)
     }
 

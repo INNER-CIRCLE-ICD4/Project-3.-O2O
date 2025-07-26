@@ -4,6 +4,7 @@ import com.ddakta.auth.filter.JwtFilter
 import com.ddakta.auth.oauth.OAuth2LoginSuccessHandler
 import com.ddakta.auth.service.JwtService
 import com.ddakta.auth.service.OAuth2UserService
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -18,7 +19,9 @@ import org.springframework.web.cors.CorsConfiguration
 class SecurityConfig(
     val userService: OAuth2UserService,
     val loginSuccessHandler: OAuth2LoginSuccessHandler,
-    val jwtService: JwtService
+    val jwtService: JwtService,
+    @Value("\${client.web.origin}")
+    val origin: String
 ) {
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
@@ -40,7 +43,7 @@ class SecurityConfig(
             .cors { corsCustomizer ->
                 corsCustomizer.configurationSource { request ->
                     CorsConfiguration().apply {
-                        allowedOrigins = listOf("http://localhost:8081")
+                        allowedOrigins = listOf(origin)
                         allowedMethods = listOf("*")
                         allowCredentials = true
                         allowedHeaders = listOf("*")
