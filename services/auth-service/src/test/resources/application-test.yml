@@ -1,0 +1,56 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    show-sql: false
+  
+  flyway:
+    enabled: false
+  
+  # Redis 테스트 설정 (임베디드 Redis 없이)
+  data:
+    redis:
+      repositories:
+        enabled: false
+  
+  # OAuth2 테스트 설정
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope: openid,profile,email
+          naver:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope: name,email
+          kakao:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope: profile_nickname,account_email
+
+jwt:
+  secret: test-secret-key-for-jwt-signing-must-be-at-least-32-characters-long
+  access-token-validity: 900000
+  refresh-token-validity: 604800000
+
+# Mock Auth 활성화
+test:
+  auth:
+    enabled: true
+
+logging:
+  level:
+    com.ddakta.auth: DEBUG

@@ -10,5 +10,6 @@ include(
     "common:domain",
     "common:events",
     "common:utils",
-    "common:user-client"
+    "common:user-client",
+    "common:mock-auth"
 )

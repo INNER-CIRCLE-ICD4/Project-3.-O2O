@@ -7,6 +7,7 @@ plugins {
 dependencies {
     implementation(project(":common:domain"))
     implementation(project(":common:utils"))
+    implementation(project(":common:mock-auth"))
     
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -24,6 +25,7 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-core")
     
+    
     // Service Discovery
     implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
     
@@ -39,6 +41,7 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter:1.19.3")
     testImplementation("org.mockito:mockito-core")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    testRuntimeOnly("com.h2database:h2")
 }
 
 tasks.bootJar {
