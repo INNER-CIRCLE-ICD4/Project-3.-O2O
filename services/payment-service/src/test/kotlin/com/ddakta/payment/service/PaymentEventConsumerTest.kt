@@ -2,14 +2,20 @@ package com.ddakta.payment.service
 
 import com.ddakta.payment.event.DriveEndEvent
 import com.ddakta.payment.event.PaymentEventListener
+import com.ddakta.payment.event.PaymentEventProvider
+import com.ddakta.payment.repository.PaymentRepository
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.test.context.ActiveProfiles
@@ -43,15 +49,20 @@ class PaymentEventConsumerTest {
     @Autowired
     private lateinit var kafkaTemplate: KafkaTemplate<String, String>
 
-    @SpyBean
-    private lateinit var paymentEventConsumer: PaymentEventListener
+    @MockBean
+    private lateinit var paymentService: PaymentService
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
+    @SpyBean
+    private lateinit var paymentEventListener: PaymentEventListener
+
     private lateinit var fakeEventProducer: FakeEventProducer
+
     @BeforeEach
     fun setup() {
+        paymentEventListener = PaymentEventListener(objectMapper, paymentService)
         fakeEventProducer = FakeEventProducer(kafkaTemplate, objectMapper)
     }
 
@@ -77,21 +88,12 @@ class PaymentEventConsumerTest {
         fakeEventProducer.sendDriveEndEvent(event).get(5, TimeUnit.SECONDS)
 
         // then
-        verify(paymentEventConsumer, timeout(5000)).processPayment(event)
-    }
-
-    @Test
-    @DisplayName("결제 금액이 0 이하일 경우 예외 발생 테스트")
-    fun test02() {
-
-        // when & then
-        fakeEventProducer.sendDriveEndEvent(invalidEvent).get(5, TimeUnit.SECONDS)
-        verify(paymentEventConsumer, timeout(5000)).processPayment(invalidEvent)
+        verify(paymentService, timeout(5000)).executePayment(event)
     }
 
     @Test
     @DisplayName("여러 건의 결제 이벤트 순차 처리 테스트")
-    fun test03() {
+    fun test02() {
         // given
         val events = listOf(
             DriveEndEvent(1L, "user_id_uuid_1", 5000, "CARD"),
@@ -105,8 +107,10 @@ class PaymentEventConsumerTest {
         }
 
         // then
-        events.forEach { event ->
-            verify(paymentEventConsumer, timeout(5000)).processPayment(event)
-        }
+        val captor = argumentCaptor<DriveEndEvent>()
+        verify(paymentService, timeout(5000).times(3)).executePayment(captor.capture())
+
+        val receivedEvents = captor.allValues
+        assertThat(receivedEvents).containsExactlyInAnyOrderElementsOf(events)
     }
 }
