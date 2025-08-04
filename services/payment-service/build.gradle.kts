@@ -8,13 +8,24 @@ dependencies {
     implementation(project(":common:domain"))
     implementation(project(":common:events"))
     implementation(project(":common:utils"))
-    
+    implementation(project(":common:user-client"))
+
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.kafka:spring-kafka")
-    implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+//    implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
     runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly("org.springframework.boot:spring-boot-docker-compose")
+
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.mockito:mockito-core")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    testImplementation("org.testcontainers:junit-jupiter:1.19.3")
+    testImplementation("org.testcontainers:postgresql:1.19.3")
+    testImplementation("org.testcontainers:kafka:1.19.3")
 }
 
 tasks.bootJar {
@@ -22,3 +33,6 @@ tasks.bootJar {
     mainClass.set("com.ddakta.payment.PaymentApplicationKt")
 }
 
+tasks.test {
+    useJUnitPlatform()
+}
