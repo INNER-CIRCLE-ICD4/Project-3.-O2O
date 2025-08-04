@@ -1,0 +1,241 @@
+spring:
+  profiles:
+    active: prod
+    include:
+      - kafka
+      - circuit-breaker
+  
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:db.ddakta.com}:${DB_PORT:5432}/${DB_NAME:ddakta_matching}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:50}
+      minimum-idle: ${DB_MIN_IDLE:10}
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        default_batch_fetch_size: 100
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+    open-in-view: false
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      compression-type: snappy
+      linger-ms: 20
+      batch-size: 32768
+    consumer:
+      group-id: matching-service-${HOSTNAME:default}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.ddakta.*"
+      auto-offset-reset: latest
+      enable-auto-commit: false
+      max-poll-records: 500
+
+  redis:
+    cluster:
+      nodes: ${REDIS_CLUSTER_NODES}
+      max-redirects: 3
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 5
+      cluster:
+        refresh:
+          adaptive: true
+          period: 60s
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+    validate-on-migrate: true
+
+server:
+  port: ${SERVER_PORT:8082}
+  instance-id: ${HOSTNAME:matching-instance}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 20
+    accept-count: 100
+    max-connections: 10000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVERS}
+    registry-fetch-interval-seconds: 5
+  instance:
+    instance-id: ${spring.application.name}:${server.instance-id}:${server.port}
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+    metadata-map:
+      zone: ${ZONE:gangnam}
+      version: ${APP_VERSION:1.0.0}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      environment: prod
+      instance: ${server.instance-id}
+  health:
+    circuitbreakers:
+      enabled: true
+    redis:
+      enabled: true
+    kafka:
+      enabled: true
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 3000
+        readTimeout: 5000
+        loggerLevel: BASIC
+  circuitbreaker:
+    enabled: true
+  compression:
+    request:
+      enabled: true
+    response:
+      enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      location-service:
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 20
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        slowCallDurationThreshold: 3s
+        slowCallRateThreshold: 50
+      user-service:
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 20
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        slowCallDurationThreshold: 3s
+        slowCallRateThreshold: 50
+  retry:
+    instances:
+      location-service:
+        maxAttempts: 3
+        waitDuration: 1s
+        retryExceptions:
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+      user-service:
+        maxAttempts: 3
+        waitDuration: 1s
+
+matching:
+  batch:
+    size: ${BATCH_SIZE:200}
+    interval: ${BATCH_INTERVAL:1000}
+    adaptive: true
+    min-size: 50
+    max-size: 500
+    min-interval: 500
+    max-interval: 3000
+  driver-call:
+    timeout: ${DRIVER_CALL_TIMEOUT:10}
+    max-drivers: ${MAX_DRIVERS_PER_RIDE:5}
+  distance:
+    weight: 0.7
+  rating:
+    weight: 0.2
+  acceptance:
+    weight: 0.1
+  search:
+    radius-km: ${SEARCH_RADIUS:3.0}
+    max-drivers: ${MAX_SEARCH_DRIVERS:30}
+  surge:
+    enabled: true
+    min-multiplier: 1.0
+    max-multiplier: 3.0
+    duration-minutes: 30
+  cleanup:
+    enabled: true
+    completed-retention-days: 90
+    cancelled-retention-days: 30
+    failed-retention-days: 7
+
+logging:
+  level:
+    com.ddakta.matching: INFO
+    org.springframework.kafka: WARN
+    org.springframework.web: WARN
+    com.zaxxer.hikari: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/matching-service/app.log
+    max-size: 100MB
+    max-history: 30
+
+# External Service URLs
+ddakta:
+  location-service:
+    url: ${LOCATION_SERVICE_URL:http://location-service:8083}
+  user-service:
+    url: ${USER_SERVICE_URL:http://user-service:8081}
+
+# Security settings
+security:
+  require-ssl: true
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://app.ddakta.com}
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+    max-age: 3600
+
+# Rate limiting
+rate-limit:
+  enabled: true
+  default-limit: 1000
+  default-duration: 1m
+  limits:
+    - path: /api/v1/rides
+      limit: 100
+      duration: 1m
+    - path: /api/v1/matching
+      limit: 50
+      duration: 1m

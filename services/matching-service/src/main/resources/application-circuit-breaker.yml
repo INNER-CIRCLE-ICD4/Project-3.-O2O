@@ -1,0 +1,69 @@
+# Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+        recordExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - java.util.concurrent.TimeoutException
+          - java.io.IOException
+          - feign.FeignException
+    instances:
+      location-service:
+        baseConfig: default
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 60
+        waitDurationInOpenState: 60s
+        slowCallDurationThreshold: 3s
+        slowCallRateThreshold: 70
+      user-service:
+        baseConfig: default
+        slidingWindowSize: 15
+        minimumNumberOfCalls: 8
+        failureRateThreshold: 50
+        waitDurationInOpenState: 45s
+        slowCallDurationThreshold: 2s
+        slowCallRateThreshold: 60
+
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 3s
+    instances:
+      location-service:
+        timeoutDuration: 5s
+      user-service:
+        timeoutDuration: 3s
+
+  bulkhead:
+    configs:
+      default:
+        maxConcurrentCalls: 25
+        maxWaitDuration: 10ms
+    instances:
+      location-service:
+        maxConcurrentCalls: 50
+      user-service:
+        maxConcurrentCalls: 30
+
+# Actuator endpoints for monitoring
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - circuitbreakers
+          - circuitbreakerevents

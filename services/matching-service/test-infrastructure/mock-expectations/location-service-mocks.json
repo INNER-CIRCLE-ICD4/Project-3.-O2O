@@ -1,0 +1,185 @@
+[
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/api/v1/drivers/available",
+      "queryStringParameters": {
+        "h3Index": [".*"],
+        "radius": [".*"]
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "headers": {
+        "Content-Type": ["application/json"]
+      },
+      "body": {
+        "drivers": [
+          {
+            "id": "d1111111-1111-1111-1111-111111111111",
+            "location": {
+              "latitude": 37.4979,
+              "longitude": 127.0276,
+              "h3Index": "882a100d9ffffff",
+              "lastUpdated": "${json-unit.any-string}"
+            },
+            "status": "AVAILABLE",
+            "rating": 4.8,
+            "acceptanceRate": 0.92,
+            "completionRate": 0.98,
+            "vehicleType": "STANDARD"
+          },
+          {
+            "id": "d2222222-2222-2222-2222-222222222222",
+            "location": {
+              "latitude": 37.4985,
+              "longitude": 127.0282,
+              "h3Index": "882a100d9ffffff",
+              "lastUpdated": "${json-unit.any-string}"
+            },
+            "status": "AVAILABLE",
+            "rating": 4.5,
+            "acceptanceRate": 0.85,
+            "completionRate": 0.95,
+            "vehicleType": "STANDARD"
+          },
+          {
+            "id": "d3333333-3333-3333-3333-333333333333",
+            "location": {
+              "latitude": 37.5089,
+              "longitude": 127.0638,
+              "h3Index": "882a100ddffffff",
+              "lastUpdated": "${json-unit.any-string}"
+            },
+            "status": "AVAILABLE",
+            "rating": 4.9,
+            "acceptanceRate": 0.94,
+            "completionRate": 0.99,
+            "vehicleType": "PREMIUM"
+          }
+        ],
+        "totalCount": 3,
+        "timestamp": "${json-unit.any-string}"
+      }
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/api/v1/drivers/available/count",
+      "queryStringParameters": {
+        "h3Index": [".*"]
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "headers": {
+        "Content-Type": ["application/json"]
+      },
+      "body": {
+        "h3Index": "${json-unit.regex}882a100[a-f0-9]{7}",
+        "count": "${json-unit.any-number}",
+        "timestamp": "${json-unit.any-string}"
+      }
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "POST",
+      "path": "/api/v1/locations/driver/.*/update",
+      "headers": {
+        "Content-Type": ["application/json"]
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "headers": {
+        "Content-Type": ["application/json"]
+      },
+      "body": {
+        "success": true,
+        "driverId": "${json-unit.any-string}",
+        "h3Index": "${json-unit.any-string}",
+        "timestamp": "${json-unit.any-string}"
+      }
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/api/v1/h3/neighbors",
+      "queryStringParameters": {
+        "h3Index": [".*"],
+        "ringSize": [".*"]
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "headers": {
+        "Content-Type": ["application/json"]
+      },
+      "body": {
+        "centerH3": "${json-unit.any-string}",
+        "neighbors": [
+          "882a100d9ffffff",
+          "882a100dbffffff",
+          "882a100ddffffff",
+          "882a100c1ffffff",
+          "882a100c3ffffff"
+        ],
+        "ringSize": "${json-unit.any-number}"
+      }
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/api/v1/distance",
+      "queryStringParameters": {
+        "fromLat": [".*"],
+        "fromLng": [".*"],
+        "toLat": [".*"],
+        "toLng": [".*"]
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "headers": {
+        "Content-Type": ["application/json"]
+      },
+      "body": {
+        "distance": 3.5,
+        "unit": "km",
+        "duration": {
+          "value": 12,
+          "unit": "minutes"
+        }
+      }
+    }
+  },
+  {
+    "httpRequest": {
+      "method": "GET",
+      "path": "/api/v1/locations/h3-from-coordinates",
+      "queryStringParameters": {
+        "lat": [".*"],
+        "lng": [".*"],
+        "resolution": [".*"]
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "headers": {
+        "Content-Type": ["application/json"]
+      },
+      "body": {
+        "h3Index": "882a100d9ffffff",
+        "resolution": 8,
+        "coordinates": {
+          "latitude": "${json-unit.any-number}",
+          "longitude": "${json-unit.any-number}"
+        }
+      }
+    }
+  }
+]

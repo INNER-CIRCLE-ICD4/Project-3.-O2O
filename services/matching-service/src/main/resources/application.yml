@@ -1,0 +1,139 @@
+spring:
+  application:
+    name: matching-service
+  profiles:
+    active: local
+    include:
+      - kafka
+      - circuit-breaker
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ddakta_matching
+    username: ${DB_USERNAME:ddakta}
+    password: ${DB_PASSWORD:ddakta123}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_batch_fetch_size: 100
+    show-sql: false
+    open-in-view: false
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: matching-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.ddakta.*"
+      auto-offset-reset: earliest
+
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+server:
+  port: 8082
+  instance-id: ${HOSTNAME:matching-instance-1}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka}
+  instance:
+    instance-id: ${spring.application.name}:${server.instance-id}:${server.port}
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: BASIC
+  circuitbreaker:
+    enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      location-service:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+      user-service:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+
+matching:
+  batch:
+    size: 100
+    interval: 1000 # milliseconds
+  driver-call:
+    timeout: 15 # seconds
+    max-drivers: 3
+  distance:
+    weight: 0.7
+  rating:
+    weight: 0.2
+  acceptance:
+    weight: 0.1
+  search:
+    radius-km: 2.0
+    max-drivers: 20
+
+logging:
+  level:
+    com.ddakta.matching: DEBUG
+    org.springframework.kafka: INFO
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# External Service URLs
+ddakta:
+  location-service:
+    url: ${LOCATION_SERVICE_URL:http://location-service:8083}
+  user-service:
+    url: ${USER_SERVICE_URL:http://user-service:8081}

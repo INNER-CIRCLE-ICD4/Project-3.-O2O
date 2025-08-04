@@ -1,0 +1,93 @@
+spring:
+  application:
+    name: matching-service-test
+  
+  datasource:
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: jdbc:tc:postgresql:15:///ddakta_matching_test?TC_INITSCRIPT=classpath:init-test-db.sql
+    
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+    
+  redis:
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
+      group-id: matching-service-test
+    producer:
+      retries: 3
+      
+# Test-specific configurations
+matching:
+  batch:
+    size: 10  # Smaller batch size for tests
+    interval: 100  # Faster processing for tests
+  driver-call:
+    timeout: 5  # Shorter timeout for tests
+    max-drivers: 3
+  search:
+    radius-km: 2.0
+    max-drivers: 10
+
+# External service URLs (will be overridden by TestContainers)
+ddakta:
+  location-service:
+    url: http://localhost:8080
+  user-service:
+    url: http://localhost:8080
+
+# Logging
+logging:
+  level:
+    com.ddakta.matching: DEBUG
+    org.springframework.kafka: WARN
+    org.testcontainers: INFO
+    com.github.tomakehurst.wiremock: DEBUG
+    
+# Disable some features for testing
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: health
+        
+# Test profiles
+---
+spring:
+  config:
+    activate:
+      on-profile: integration
+      
+# Integration test specific settings
+server:
+  port: 0  # Random port
+  
+---
+spring:
+  config:
+    activate:
+      on-profile: performance
+      
+# Performance test specific settings
+matching:
+  batch:
+    size: 100
+    interval: 1000
+    
+spring:
+  jpa:
+    show-sql: false

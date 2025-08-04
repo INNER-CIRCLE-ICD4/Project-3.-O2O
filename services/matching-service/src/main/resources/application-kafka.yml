@@ -1,0 +1,67 @@
+# Kafka Configuration
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        compression.type: snappy
+        linger.ms: 20
+        batch.size: 32768
+    
+    consumer:
+      group-id: matching-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      enable-auto-commit: false
+      max-poll-records: 500
+      properties:
+        spring.json.trusted.packages: "com.ddakta.*"
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 10000
+        max.poll.interval.ms: 300000
+        isolation.level: read_committed
+    
+    listener:
+      ack-mode: manual_immediate
+      concurrency: 3
+      type: single
+      missing-topics-fatal: false
+
+# Kafka Topics
+ddakta:
+  kafka:
+    topics:
+      # Outbound topics (produced by matching service)
+      ride-requested: ride-requested
+      ride-matched: ride-matched
+      ride-status-changed: ride-status-changed
+      ride-cancelled: ride-cancelled
+      ride-completed: ride-completed
+      driver-call-request: driver-call-request
+      matching-request-created: matching-request-created
+      matching-success: matching-success
+      matching-failed: matching-failed
+      matching-request-expired: matching-request-expired
+      
+      # Inbound topics (consumed by matching service)
+      payment-processed: payment-processed
+      payment-failed: payment-failed
+      payment-refunded: payment-refunded
+      driver-location-updated: driver-location-updated
+      driver-status-changed: driver-status-changed
+      driver-availability-changed: driver-availability-changed
+      notification-delivered: notification-delivered
+      notification-failed: notification-failed
+      user-profile-updated: user-profile-updated
+      user-payment-method-updated: user-payment-method-updated
+      driver-rating-updated: driver-rating-updated
+      surge-pricing-updated: surge-pricing-updated
+      traffic-conditions-updated: traffic-conditions-updated
