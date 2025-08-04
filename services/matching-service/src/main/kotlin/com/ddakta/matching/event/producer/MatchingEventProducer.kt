@@ -1,9 +1,9 @@
 package com.ddakta.matching.event.producer
 
 import com.ddakta.matching.domain.entity.MatchingRequest
-import com.ddakta.matching.event.model.MatchingRequestCreatedEvent
-import com.ddakta.matching.event.model.MatchingRequestExpiredEvent
-import com.ddakta.matching.event.model.MatchingSuccessEvent
+import com.ddakta.matching.event.model.matching.MatchingRequestCreatedEvent
+import com.ddakta.matching.event.model.matching.MatchingRequestExpiredEvent
+import com.ddakta.matching.event.model.matching.MatchingSuccessEvent
 import com.ddakta.matching.exception.EventPublishException
 import mu.KotlinLogging
 import org.springframework.kafka.core.KafkaTemplate

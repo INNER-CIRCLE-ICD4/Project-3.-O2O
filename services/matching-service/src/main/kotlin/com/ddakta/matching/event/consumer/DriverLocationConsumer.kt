@@ -1,9 +1,9 @@
 package com.ddakta.matching.event.consumer
 
 import com.ddakta.matching.dto.response.RideLocationUpdateDto
-import com.ddakta.matching.event.model.DriverAvailabilityChangedEvent
-import com.ddakta.matching.event.model.DriverLocationUpdatedEvent
-import com.ddakta.matching.event.model.DriverStatusChangedEvent
+import com.ddakta.matching.event.model.driver.DriverAvailabilityChangedEvent
+import com.ddakta.matching.event.model.driver.DriverLocationUpdatedEvent
+import com.ddakta.matching.event.model.driver.DriverStatusChangedEvent
 import com.ddakta.matching.service.RideService
 import mu.KotlinLogging
 import org.springframework.data.redis.core.RedisTemplate

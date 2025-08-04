@@ -3,7 +3,15 @@ package com.ddakta.matching.event.producer
 import com.ddakta.matching.domain.entity.DriverCall
 import com.ddakta.matching.domain.entity.Ride
 import com.ddakta.matching.dto.internal.LocationInfo
-import com.ddakta.matching.event.model.*
+import com.ddakta.matching.event.model.ride.RideRequestedEvent
+import com.ddakta.matching.event.model.ride.RideMatchedEvent
+import com.ddakta.matching.event.model.ride.RideStatusChangedEvent
+import com.ddakta.matching.event.model.ride.RideCancelledEvent
+import com.ddakta.matching.event.model.ride.RideCompletedEvent
+import com.ddakta.matching.event.model.ride.DriverCallRequestEvent
+import com.ddakta.matching.event.model.ride.DriverCallInfo
+import com.ddakta.matching.event.model.ride.EventLocationDto
+import com.ddakta.matching.event.model.driver.DriverStatusChangedEvent
 import com.ddakta.matching.exception.EventPublishException
 import com.fasterxml.jackson.databind.ObjectMapper
 import mu.KotlinLogging
@@ -34,8 +42,8 @@ class RideEventProducer(
         val event = RideRequestedEvent(
             rideId = ride.id!!,
             passengerId = ride.passengerId,
-            pickupLocation = LocationDto.from(ride.pickupLocation),
-            dropoffLocation = LocationDto.from(ride.dropoffLocation),
+            pickupLocation = EventLocationDto.from(ride.pickupLocation),
+            dropoffLocation = EventLocationDto.from(ride.dropoffLocation),
             pickupH3 = ride.pickupLocation.h3Index,
             requestedAt = ride.requestedAt,
             estimatedFare = ride.fare?.baseFare,
@@ -52,7 +60,7 @@ class RideEventProducer(
             driverId = ride.driverId!!,
             matchedAt = ride.matchedAt ?: LocalDateTime.now(),
             estimatedArrivalSeconds = estimatedArrival,
-            driverLocation = driverLocation?.let { LocationDto.from(it) }
+            driverLocation = driverLocation?.let { EventLocationDto.from(it) }
         )
 
         publishEvent(RIDE_MATCHED_TOPIC, ride.id.toString(), event)

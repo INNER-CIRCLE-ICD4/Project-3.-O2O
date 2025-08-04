@@ -1,5 +1,7 @@
 package com.ddakta.matching.config
 
+import com.ddakta.matching.exception.ResourceNotFoundException
+import com.ddakta.matching.exception.ServiceUnavailableException
 import feign.Logger
 import feign.Request
 import feign.Retryer
@@ -43,6 +45,3 @@ class FeignConfig {
         }
     }
 }
-
-class ServiceUnavailableException(message: String) : RuntimeException(message)
-class ResourceNotFoundException(message: String) : RuntimeException(message)

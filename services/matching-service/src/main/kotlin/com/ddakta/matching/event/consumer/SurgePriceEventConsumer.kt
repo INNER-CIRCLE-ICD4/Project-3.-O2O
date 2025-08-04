@@ -1,7 +1,7 @@
 package com.ddakta.matching.event.consumer
 
-import com.ddakta.matching.event.model.SurgePricingUpdatedEvent
-import com.ddakta.matching.event.model.TrafficConditionsUpdatedEvent
+import com.ddakta.matching.event.model.pricing.SurgePricingUpdatedEvent
+import com.ddakta.matching.event.model.location.TrafficConditionsUpdatedEvent
 import com.ddakta.matching.service.SurgePriceService
 import mu.KotlinLogging
 import org.springframework.kafka.annotation.KafkaListener

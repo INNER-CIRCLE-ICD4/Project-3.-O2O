@@ -1,8 +1,8 @@
 package com.ddakta.matching.event.consumer
 
-import com.ddakta.matching.event.model.DriverRatingUpdatedEvent
-import com.ddakta.matching.event.model.UserPaymentMethodUpdatedEvent
-import com.ddakta.matching.event.model.UserProfileUpdatedEvent
+import com.ddakta.matching.event.model.driver.DriverRatingUpdatedEvent
+import com.ddakta.matching.event.model.user.UserPaymentMethodUpdatedEvent
+import com.ddakta.matching.event.model.user.UserProfileUpdatedEvent
 import mu.KotlinLogging
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.kafka.annotation.KafkaListener

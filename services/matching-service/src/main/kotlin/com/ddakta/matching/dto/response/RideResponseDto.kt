@@ -3,7 +3,7 @@ package com.ddakta.matching.dto.response
 import com.ddakta.matching.domain.entity.Ride
 import com.ddakta.matching.domain.enum.CancellationReason
 import com.ddakta.matching.domain.enum.RideStatus
-import com.ddakta.matching.dto.request.LocationDto
+import com.ddakta.matching.dto.request.RequestLocationDto
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
@@ -13,8 +13,8 @@ data class RideResponseDto(
     val passengerId: UUID,
     val driverId: UUID?,
     val status: RideStatus,
-    val pickupLocation: LocationDto,
-    val dropoffLocation: LocationDto,
+    val pickupLocation: RequestLocationDto,
+    val dropoffLocation: RequestLocationDto,
     val fare: FareDto?,
     val vehicleType: String?,
     val paymentMethodId: UUID?,
@@ -39,13 +39,13 @@ data class RideResponseDto(
                 passengerId = ride.passengerId,
                 driverId = ride.driverId,
                 status = ride.status,
-                pickupLocation = LocationDto(
+                pickupLocation = RequestLocationDto(
                     latitude = ride.pickupLocation.latitude,
                     longitude = ride.pickupLocation.longitude,
                     address = ride.pickupLocation.address,
                     h3Index = ride.pickupLocation.h3Index
                 ),
-                dropoffLocation = LocationDto(
+                dropoffLocation = RequestLocationDto(
                     latitude = ride.dropoffLocation.latitude,
                     longitude = ride.dropoffLocation.longitude,
                     address = ride.dropoffLocation.address,
@@ -78,10 +78,3 @@ data class RideResponseDto(
         }
     }
 }
-
-data class FareDto(
-    val baseFare: BigDecimal,
-    val surgeMultiplier: BigDecimal,
-    val totalFare: BigDecimal?,
-    val currency: String
-)

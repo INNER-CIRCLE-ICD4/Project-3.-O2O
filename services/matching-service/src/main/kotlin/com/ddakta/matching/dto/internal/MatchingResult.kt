@@ -10,10 +10,3 @@ data class MatchingResult(
     val matchingScore: Double? = null,
     val processingTimeMs: Long = 0
 )
-
-data class MatchedDriver(
-    val driverId: UUID,
-    val estimatedArrivalSeconds: Int,
-    val score: Double,
-    val rank: Int
-)

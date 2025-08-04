@@ -1,7 +1,7 @@
 package com.ddakta.matching.event.consumer
 
-import com.ddakta.matching.event.model.NotificationDeliveredEvent
-import com.ddakta.matching.event.model.NotificationFailedEvent
+import com.ddakta.matching.event.model.notification.NotificationDeliveredEvent
+import com.ddakta.matching.event.model.notification.NotificationFailedEvent
 import mu.KotlinLogging
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.Acknowledgment

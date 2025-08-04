@@ -2,9 +2,9 @@ package com.ddakta.matching.event.consumer
 
 import com.ddakta.matching.domain.enum.RideEvent
 import com.ddakta.matching.dto.request.RideStatusUpdateDto
-import com.ddakta.matching.event.model.PaymentFailedEvent
-import com.ddakta.matching.event.model.PaymentProcessedEvent
-import com.ddakta.matching.event.model.PaymentRefundedEvent
+import com.ddakta.matching.event.model.payment.PaymentFailedEvent
+import com.ddakta.matching.event.model.payment.PaymentProcessedEvent
+import com.ddakta.matching.event.model.payment.PaymentRefundedEvent
 import com.ddakta.matching.service.RideService
 import mu.KotlinLogging
 import org.springframework.kafka.annotation.KafkaListener
