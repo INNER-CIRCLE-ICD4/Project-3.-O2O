@@ -35,7 +35,7 @@ data class RideResponseDto(
     companion object {
         fun from(ride: Ride): RideResponseDto {
             return RideResponseDto(
-                id = ride.id!!,
+                id = ride.id ?: throw IllegalStateException("Ride ID cannot be null"),
                 passengerId = ride.passengerId,
                 driverId = ride.driverId,
                 status = ride.status,

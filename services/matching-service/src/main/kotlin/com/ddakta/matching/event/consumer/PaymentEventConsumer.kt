@@ -59,11 +59,12 @@ class PaymentEventConsumer(
                 
                 // Update ride with payment confirmation
                 // This could trigger additional events or notifications
-                val metadata = mapOf(
-                    "paymentId" to event.paymentId.toString(),
-                    "paymentMethod" to event.paymentMethod,
-                    "amount" to event.amount.toString()
-                )
+                // TODO: Use metadata for ride update
+                // val metadata = mapOf(
+                //     "paymentId" to event.paymentId.toString(),
+                //     "paymentMethod" to event.paymentMethod,
+                //     "amount" to event.amount.toString()
+                // )
                 
                 // Store processed payment ID
                 processedPayments.add(event.paymentId)

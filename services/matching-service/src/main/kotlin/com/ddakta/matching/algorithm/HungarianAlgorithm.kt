@@ -188,7 +188,6 @@ class HungarianAlgorithm {
         }
 
         // 증대 경로 찾기 및 할당 업데이트
-        val n = rowAssignment.size
         val path = findAugmentingPath(row, col, rowAssignment, colAssignment, matrix)
         
         // 경로를 따라 할당 업데이트

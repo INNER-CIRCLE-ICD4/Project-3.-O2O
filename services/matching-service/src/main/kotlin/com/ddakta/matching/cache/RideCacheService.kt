@@ -61,7 +61,8 @@ class RideCacheService(
             updateStatusCaches(ride)
             
             // Cache state for state machine
-            cacheRideState(ride.id!!, ride.status.name)
+            val rideId = ride.id ?: throw IllegalArgumentException("Ride ID cannot be null when caching ride state")
+            cacheRideState(rideId, ride.status.name)
             
             logger.debug { "Cached ride ${ride.id} with TTL ${ttl.toMinutes()} minutes" }
             

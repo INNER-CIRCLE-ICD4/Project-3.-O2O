@@ -89,25 +89,24 @@ class MatchingServiceImpl(
      * @return 매칭 결과 리스트
      */
     override fun processMatchingBatch(): List<MatchingResult> {
-        val processingTime = measureTimeMillis {
-            val lock = redissonClient.getFairLock(MATCHING_LOCK_KEY)
+        val lock = redissonClient.getFairLock(MATCHING_LOCK_KEY)
 
-            if (!lock.tryLock(0, 5, TimeUnit.SECONDS)) {
-                logger.debug { "Another instance is processing matching batch" }
-                return emptyList()
-            }
-
-            try {
-                return processMatchingBatchInternal()
-            } finally {
-                if (lock.isHeldByCurrentThread) {
-                    lock.unlock()
-                }
-            }
+        if (!lock.tryLock(0, 5, TimeUnit.SECONDS)) {
+            logger.debug { "Another instance is processing matching batch" }
+            return emptyList()
         }
 
-        logger.info { "Matching batch completed in ${processingTime}ms" }
-        return emptyList()
+        val startTime = System.currentTimeMillis()
+        try {
+            val result = processMatchingBatchInternal()
+            val processingTime = System.currentTimeMillis() - startTime
+            logger.info { "Matching batch completed in ${processingTime}ms" }
+            return result
+        } finally {
+            if (lock.isHeldByCurrentThread) {
+                lock.unlock()
+            }
+        }
     }
 
     /**
@@ -296,15 +295,14 @@ class MatchingServiceImpl(
         driver: AvailableDriver,
         cost: Double
     ): MatchingResult {
-        val processingTime = measureTimeMillis {
-            try {
-                // 드라이버 잠금 획득
-                val driverLock = redissonClient.getFairLock("$DRIVER_ASSIGNMENT_LOCK_KEY${driver.driverId}")
+        try {
+            // 드라이버 잠금 획득
+            val driverLock = redissonClient.getFairLock("$DRIVER_ASSIGNMENT_LOCK_KEY${driver.driverId}")
 
-                if (!driverLock.tryLock(100, 1000, TimeUnit.MILLISECONDS)) {
-                    logger.warn { "Failed to acquire lock for driver ${driver.driverId}" }
-                    return createNoDriverResult(request)
-                }
+            if (!driverLock.tryLock(100, 1000, TimeUnit.MILLISECONDS)) {
+                logger.warn { "Failed to acquire lock for driver ${driver.driverId}" }
+                return createNoDriverResult(request)
+            }
 
                 try {
                     // 운행 정보 조회
@@ -336,7 +334,8 @@ class MatchingServiceImpl(
                         driverCalls.first().estimatedArrivalSeconds,
                         null // TODO: 임시 수정 - Location 타입 불일치 해결
                     )
-                    rideEventProducer.publishDriverCallRequest(ride.id!!, driverCalls)
+                    val rideId = ride.id
+                    rideEventProducer.publishDriverCallRequest(rideId, driverCalls)
 
                     logger.info { "Successfully matched ride ${ride.id} with driver ${driver.driverId}" }
 
@@ -358,18 +357,10 @@ class MatchingServiceImpl(
                     driverLock.unlock()
                 }
 
-            } catch (e: Exception) {
-                logger.error(e) { "Error processing driver assignment for request ${request.rideId}" }
-                return createFailedResult(request, e.message ?: "Unknown error")
-            }
+        } catch (e: Exception) {
+            logger.error(e) { "Error processing driver assignment for request ${request.rideId}" }
+            return createFailedResult(request, e.message ?: "Unknown error")
         }
-
-        return MatchingResult(
-            rideId = request.rideId,
-            matchedDrivers = emptyList(),
-            success = false,
-            processingTimeMs = processingTime
-        )
     }
 
     private fun createDriverCalls(
@@ -420,7 +411,8 @@ class MatchingServiceImpl(
 
     override fun createMatchingRequest(ride: Ride): MatchingRequest {
         // 중복 요청 방지
-        val existing = matchingRequestRepository.findByRideId(ride.id!!)
+        val rideId = ride.id
+        val existing = matchingRequestRepository.findByRideId(rideId)
         if (existing != null) {
             return existing
         }
@@ -428,7 +420,7 @@ class MatchingServiceImpl(
         val surgeMultiplier = surgePriceService.getCurrentSurgeMultiplier(ride.pickupLocation.h3Index)
 
         val matchingRequest = MatchingRequest(
-            rideId = ride.id!!,
+            rideId = rideId,
             passengerId = ride.passengerId,
             pickupH3 = ride.pickupLocation.h3Index,
             dropoffH3 = ride.dropoffLocation.h3Index,

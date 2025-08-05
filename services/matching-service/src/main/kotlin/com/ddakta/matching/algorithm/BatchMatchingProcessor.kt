@@ -186,7 +186,6 @@ class BatchMatchingProcessor(
         allDrivers: List<AvailableDriver>,
         assignments: IntArray
     ) {
-        val driverIndexMap = allDrivers.withIndex().associate { it.value.driverId to it.index }
         val assignedDrivers = mutableSetOf<UUID>()
 
         requestsWithData.forEachIndexed { requestIndex, requestData ->

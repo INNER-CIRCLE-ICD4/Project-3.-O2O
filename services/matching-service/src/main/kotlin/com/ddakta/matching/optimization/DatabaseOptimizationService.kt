@@ -461,7 +461,7 @@ class DatabaseOptimizationService(
         // 1시간 이전의 쿼리 실행 시간 정리
         val cutoff = System.currentTimeMillis() - 3600000
         
-        queryExecutionTimes.forEach { (query, times) ->
+        queryExecutionTimes.forEach { (_, times) ->
             times.removeIf { it < cutoff }
         }
         

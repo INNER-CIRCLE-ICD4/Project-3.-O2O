@@ -7,9 +7,7 @@ import com.ddakta.matching.event.model.matching.MatchingSuccessEvent
 import com.ddakta.matching.exception.EventPublishException
 import mu.KotlinLogging
 import org.springframework.kafka.core.KafkaTemplate
-import org.springframework.kafka.support.SendResult
 import org.springframework.stereotype.Component
-import org.springframework.util.concurrent.ListenableFutureCallback
 import java.time.LocalDateTime
 import java.util.*
 
@@ -31,7 +29,7 @@ class MatchingEventProducer(
 
     fun publishMatchingRequestCreated(matchingRequest: MatchingRequest) {
         val event = MatchingRequestCreatedEvent(
-            requestId = matchingRequest.id!!,
+            requestId = matchingRequest.id,
             rideId = matchingRequest.rideId,
             passengerId = matchingRequest.passengerId,
             pickupH3Index = matchingRequest.pickupH3Index,
@@ -82,7 +80,7 @@ class MatchingEventProducer(
 
     fun publishMatchingRequestExpired(matchingRequest: MatchingRequest) {
         val event = MatchingRequestExpiredEvent(
-            requestId = matchingRequest.id!!,
+            requestId = matchingRequest.id,
             rideId = matchingRequest.rideId,
             passengerId = matchingRequest.passengerId,
             expiredAt = LocalDateTime.now(),
@@ -127,7 +125,7 @@ class MatchingEventProducer(
 
     private fun publishEvent(topic: String, key: String, event: Any) {
         try {
-            val future = kafkaTemplate.send(topic, key, event)
+            kafkaTemplate.send(topic, key, event)
 
             // 비동기 발송 - 콜백 없이 단순화
             logger.debug { "Sent matching event to $topic: ${event::class.simpleName}" }
@@ -140,7 +138,6 @@ class MatchingEventProducer(
     private fun handlePublishFailure(
         topic: String,
         key: String,
-        event: Any,
         error: Throwable
     ) {
         // TODO: Implement dead letter queue or retry mechanism

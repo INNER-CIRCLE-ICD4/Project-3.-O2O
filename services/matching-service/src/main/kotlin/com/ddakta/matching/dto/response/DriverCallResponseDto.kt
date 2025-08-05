@@ -22,8 +22,8 @@ data class DriverCallResponseDto(
     companion object {
         fun from(driverCall: DriverCall): DriverCallResponseDto {
             return DriverCallResponseDto(
-                id = driverCall.id!!,
-                rideId = driverCall.ride.id!!,
+                id = driverCall.id ?: throw IllegalArgumentException("Driver call ID cannot be null"),
+                rideId = driverCall.ride.id ?: throw IllegalArgumentException("Ride ID cannot be null in driver call"),
                 driverId = driverCall.driverId,
                 status = driverCall.status,
                 estimatedArrivalSeconds = driverCall.estimatedArrivalSeconds,

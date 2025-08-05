@@ -11,7 +11,7 @@ data class H3Index(
         require(value.length == 15) { "H3 index must be 15 characters long" }
     }
     
-    fun getParent(resolution: Int): H3Index {
+    fun getParent(@Suppress("UNUSED_PARAMETER") resolution: Int): H3Index {
         // 실제 구현에서는 H3 라이브러리를 사용할 예정
         // 현재는 플레이스홀더로 동일한 값 반환
         return this

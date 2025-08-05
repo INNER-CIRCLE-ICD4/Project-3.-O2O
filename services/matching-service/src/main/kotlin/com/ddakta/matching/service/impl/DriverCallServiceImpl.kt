@@ -107,25 +107,25 @@ class DriverCallServiceImpl(
         logger.info { "Expired $expiredCount old driver calls" }
     }
 
-    override fun acceptCall(callId: UUID, driverId: UUID): DriverCallResponseDto {
-        val lock = redissonClient.getFairLock("$DRIVER_RESPONSE_LOCK_KEY$callId")
+    override fun acceptCall(driverCallId: UUID, driverId: UUID): DriverCallResponseDto {
+        val lock = redissonClient.getFairLock("$DRIVER_RESPONSE_LOCK_KEY$driverCallId")
 
         if (!lock.tryLock(100, 5000, TimeUnit.MILLISECONDS)) {
             throw InvalidDriverCallStateException("Failed to acquire lock for driver call response")
         }
 
         try {
-            val driverCall = driverCallRepository.findByIdWithLock(callId)
-                ?: throw DriverCallNotFoundException(callId)
+            val driverCall = driverCallRepository.findByIdWithLock(driverCallId)
+                ?: throw DriverCallNotFoundException(driverCallId)
 
             // 드라이버 확인
             if (driverCall.driverId != driverId) {
-                throw InvalidDriverCallStateException("Driver mismatch for call $callId")
+                throw InvalidDriverCallStateException("Driver mismatch for call $driverCallId")
             }
 
             // 만료 확인
             if (driverCall.isExpired()) {
-                throw DriverCallExpiredException("Driver call $callId has expired")
+                throw DriverCallExpiredException("Driver call $driverCallId has expired")
             }
 
             // 상태 확인
@@ -139,20 +139,23 @@ class DriverCallServiceImpl(
             driverCall.accept()
             val savedCall = driverCallRepository.save(driverCall)
 
+            // Get ride ID once for all operations
+            val rideId = driverCall.ride.id
+
             // 운행에 드라이버 할당
-            val ride = rideService.assignDriver(driverCall.ride.id!!, driverId)
+            rideService.assignDriver(rideId, driverId)
 
             // 같은 운행의 다른 드라이버 호출 취소
-            cancelOtherCallsForRide(driverCall.ride.id!!, callId)
+            cancelOtherCallsForRide(rideId, driverCallId)
 
             // 운행 상태 업데이트
             rideService.updateRideStatus(
-                driverCall.ride.id!!,
+                rideId,
                 RideStatusUpdateDto(
                     event = RideEvent.ASSIGN_DRIVER,
                     metadata = mapOf(
                         "driverId" to driverId.toString(),
-                        "callId" to callId.toString()
+                        "callId" to driverCallId.toString()
                     )
                 ),
                 driverId
@@ -164,7 +167,7 @@ class DriverCallServiceImpl(
             // WebSocket 알림
             notifyAcceptance(savedCall)
 
-            logger.info { "Driver $driverId accepted call $callId for ride ${driverCall.ride.id}" }
+            logger.info { "Driver $driverId accepted call $driverCallId for ride ${driverCall.ride.id}" }
 
             return DriverCallResponseDto.from(savedCall)
 
@@ -175,13 +178,13 @@ class DriverCallServiceImpl(
         }
     }
 
-    override fun rejectCall(callId: UUID, driverId: UUID): DriverCallResponseDto {
-        val driverCall = driverCallRepository.findByIdWithLock(callId)
-            ?: throw DriverCallNotFoundException(callId)
+    override fun rejectCall(driverCallId: UUID, driverId: UUID): DriverCallResponseDto {
+        val driverCall = driverCallRepository.findByIdWithLock(driverCallId)
+            ?: throw DriverCallNotFoundException(driverCallId)
 
         // 드라이버 확인
         if (driverCall.driverId != driverId) {
-            throw InvalidDriverCallStateException("Driver mismatch for call $callId")
+            throw InvalidDriverCallStateException("Driver mismatch for call $driverCallId")
         }
 
         // 상태 확인
@@ -201,7 +204,7 @@ class DriverCallServiceImpl(
         // WebSocket 알림
         notifyRejection(savedCall)
 
-        logger.info { "Driver $driverId rejected call $callId" }
+        logger.info { "Driver $driverId rejected call $driverCallId" }
 
         return DriverCallResponseDto.from(savedCall)
     }
@@ -321,7 +324,7 @@ class DriverCallServiceImpl(
         val notification = mapOf(
             "type" to "DRIVER_CALL",
             "callId" to driverCall.id,
-            "rideId" to driverCall.ride.id!!,
+            "rideId" to driverCall.ride.id,
             "estimatedArrival" to driverCall.estimatedArrivalSeconds,
             "estimatedFare" to driverCall.estimatedFare,
             "expiresAt" to driverCall.expiresAt
@@ -338,7 +341,7 @@ class DriverCallServiceImpl(
         val notification = mapOf(
             "type" to "CALL_ACCEPTED",
             "callId" to driverCall.id,
-            "rideId" to driverCall.ride.id!!,
+            "rideId" to driverCall.ride.id,
             "driverId" to driverCall.driverId
         )
 
@@ -380,7 +383,7 @@ class DriverCallServiceImpl(
         val notification = mapOf(
             "type" to "CALL_CANCELLED",
             "callId" to driverCall.id,
-            "rideId" to driverCall.ride.id!!
+            "rideId" to driverCall.ride.id
         )
 
         messagingTemplate.convertAndSendToUser(

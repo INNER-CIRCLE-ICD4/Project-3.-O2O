@@ -40,7 +40,7 @@ class RideEventProducer(
 
     fun publishRideRequested(ride: Ride) {
         val event = RideRequestedEvent(
-            rideId = ride.id!!,
+            rideId = ride.id ?: throw IllegalArgumentException("Ride ID cannot be null when publishing ride requested event"),
             passengerId = ride.passengerId,
             pickupLocation = EventLocationDto.from(ride.pickupLocation),
             dropoffLocation = EventLocationDto.from(ride.dropoffLocation),
@@ -55,9 +55,9 @@ class RideEventProducer(
 
     fun publishRideMatched(ride: Ride, estimatedArrival: Int? = null, driverLocation: LocationInfo? = null) {
         val event = RideMatchedEvent(
-            rideId = ride.id!!,
+            rideId = ride.id ?: throw IllegalArgumentException("Ride ID cannot be null when publishing ride matched event"),
             passengerId = ride.passengerId,
-            driverId = ride.driverId!!,
+            driverId = ride.driverId ?: throw IllegalArgumentException("Driver ID cannot be null when publishing ride matched event"),
             matchedAt = ride.matchedAt ?: LocalDateTime.now(),
             estimatedArrivalSeconds = estimatedArrival,
             driverLocation = driverLocation?.let { EventLocationDto.from(it) }
@@ -68,7 +68,7 @@ class RideEventProducer(
 
     fun publishRideStatusChanged(ride: Ride, previousStatus: String, metadata: Map<String, Any>? = null) {
         val event = RideStatusChangedEvent(
-            rideId = ride.id!!,
+            rideId = ride.id ?: throw IllegalArgumentException("Ride ID cannot be null when publishing ride status changed event"),
             passengerId = ride.passengerId,
             driverId = ride.driverId,
             previousStatus = previousStatus,
@@ -82,7 +82,7 @@ class RideEventProducer(
 
     fun publishRideCancelled(ride: Ride) {
         val event = RideCancelledEvent(
-            rideId = ride.id!!,
+            rideId = ride.id ?: throw IllegalArgumentException("Ride ID cannot be null when publishing ride cancelled event"),
             passengerId = ride.passengerId,
             driverId = ride.driverId,
             cancellationReason = ride.cancellationReason?.name,
@@ -95,9 +95,9 @@ class RideEventProducer(
 
     fun publishRideCompleted(ride: Ride) {
         val event = RideCompletedEvent(
-            rideId = ride.id!!,
+            rideId = ride.id ?: throw IllegalArgumentException("Ride ID cannot be null when publishing ride completed event"),
             passengerId = ride.passengerId,
-            driverId = ride.driverId!!,
+            driverId = ride.driverId ?: throw IllegalArgumentException("Driver ID cannot be null when publishing ride completed event"),
             completedAt = ride.completedAt ?: LocalDateTime.now(),
             distanceMeters = ride.distanceMeters,
             durationSeconds = ride.durationSeconds,
@@ -112,7 +112,7 @@ class RideEventProducer(
             rideId = rideId,
             drivers = driverCalls.map { call ->
                 DriverCallInfo(
-                    callId = call.id!!,
+                    callId = call.id ?: throw IllegalArgumentException("Driver call ID cannot be null when publishing driver call request event"),
                     driverId = call.driverId,
                     expiresAt = call.expiresAt,
                     estimatedArrival = call.estimatedArrivalSeconds,
@@ -144,7 +144,7 @@ class RideEventProducer(
 
     private fun publishEvent(topic: String, key: String, event: Any) {
         try {
-            val future = kafkaTemplate.send(topic, key, event)
+            kafkaTemplate.send(topic, key, event)
 
             // 비동기 발송 - 콜백 없이 단순화
             logger.debug { "Sent event to $topic: ${event.javaClass.simpleName}" }
@@ -157,7 +157,7 @@ class RideEventProducer(
     private fun handlePublishFailure(
         topic: String,
         key: String,
-        event: Any,
+        @Suppress("UNUSED_PARAMETER") event: Any,
         error: Throwable
     ) {
         // TODO: Implement dead letter queue or retry mechanism

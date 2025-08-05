@@ -136,7 +136,7 @@ class DlqConsumer(
         return false
     }
     
-    private fun storePoisonMessage(dlqMessage: DlqMessage, dlqTopic: String) {
+    private fun storePoisonMessage(dlqMessage: DlqMessage, @Suppress("UNUSED_PARAMETER") dlqTopic: String) {
         // In a real implementation, store to a persistent poison message store
         logger.error { 
             "Storing poison message - Topic: ${dlqMessage.originalTopic}, " +
@@ -148,7 +148,7 @@ class DlqConsumer(
         // metricsService.incrementPoisonMessageCount(dlqMessage.originalTopic)
     }
     
-    private fun storeDlqMessage(dlqMessage: DlqMessage, dlqTopic: String) {
+    private fun storeDlqMessage(dlqMessage: DlqMessage, @Suppress("UNUSED_PARAMETER") dlqTopic: String) {
         // In a real implementation, store to a persistent DLQ store (e.g., database)
         logger.info { 
             "Storing DLQ message for potential replay - " +
@@ -158,7 +158,7 @@ class DlqConsumer(
         // TODO: Implement persistent storage
     }
     
-    private fun logDlqMetrics(dlqMessage: DlqMessage, dlqTopic: String) {
+    private fun logDlqMetrics(dlqMessage: DlqMessage, @Suppress("UNUSED_PARAMETER") dlqTopic: String) {
         // Log metrics for monitoring
         logger.info { 
             "DLQ_METRIC - " +

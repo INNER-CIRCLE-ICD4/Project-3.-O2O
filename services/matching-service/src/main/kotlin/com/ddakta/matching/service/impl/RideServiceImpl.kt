@@ -375,7 +375,7 @@ class RideServiceImpl(
         val previousStatus = ride.status
 
         // 최종 요금 계산
-        val finalFare = fareCalculationService.calculateFinalFare(
+        fareCalculationService.calculateFinalFare(
             baseFare = ride.fare?.baseFare ?: BigDecimal.ZERO,
             surgeMultiplier = ride.fare?.surgeMultiplier ?: BigDecimal.ONE,
             distanceMeters = distance,
