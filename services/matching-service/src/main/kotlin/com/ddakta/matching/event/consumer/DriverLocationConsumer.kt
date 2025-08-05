@@ -35,7 +35,7 @@ class DriverLocationConsumer(
     @KafkaListener(
         topics = ["driver-location-updated"],
         groupId = "matching-service-location",
-        containerFactory = "kafkaListenerContainerFactory"
+        containerFactory = "kafkaListenerContainerFactoryWithDlq"
     )
     fun handleDriverLocationUpdate(
         @Payload event: DriverLocationUpdatedEvent,

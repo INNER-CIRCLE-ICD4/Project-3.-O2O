@@ -46,10 +46,20 @@ export const options = {
     }
   },
   thresholds: {
-    http_req_duration: ['p(95)<1000', 'p(99)<2000'], // 95% of requests under 1s
-    matching_success_rate: ['rate>0.95'], // 95% success rate
-    matching_time: ['p(95)<1000'], // 95% of matches under 1s
-    http_req_failed: ['rate<0.05'], // Less than 5% failure rate
+    // Production-ready performance thresholds
+    http_req_duration: [
+      'p(95)<200',   // 95% of requests must be under 200ms
+      'p(99)<500',   // 99% of requests must be under 500ms
+      'avg<100',     // Average response time under 100ms
+    ],
+    http_req_failed: ['rate<0.01'], // Less than 1% error rate
+    matching_success_rate: ['rate>0.99'], // 99% matching success rate
+    matching_time: [
+      'p(95)<200',   // 95% of matches under 200ms
+      'p(99)<500',   // 99% of matches under 500ms
+    ],
+    http_reqs: ['rate>100'], // At least 100 requests per second
+    iterations: ['rate>50'], // At least 50 iterations per second
   },
 };
 

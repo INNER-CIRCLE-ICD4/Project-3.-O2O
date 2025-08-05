@@ -106,13 +106,21 @@ class MatchingScoreCalculator(
                driver.isAvailable
     }
     
-    // TODO: 임시 추가 - 컴파일 오류 해결용
     fun calculateScore(distanceMeters: Double, driverRating: Double, acceptanceRate: Double, completionRate: Double): Double {
         val distanceScore = normalizeDistance(distanceMeters)
         val ratingScore = normalizeRating(driverRating)
-        val acceptanceScore = acceptanceRate
-        val completionScore = completionRate
+        val acceptanceScore = kotlin.math.max(0.0, kotlin.math.min(1.0, acceptanceRate))
+        val completionScore = kotlin.math.max(0.0, kotlin.math.min(1.0, completionRate))
         
-        return (distanceScore * 0.4) + (ratingScore * 0.3) + (acceptanceScore * 0.2) + (completionScore * 0.1)
+        // Use the weights from properties or default values
+        val distanceWeight = matchingProperties.distanceWeight
+        val ratingWeight = matchingProperties.ratingWeight
+        val acceptanceWeight = matchingProperties.acceptanceWeight
+        val completionWeight = 1.0 - distanceWeight - ratingWeight - acceptanceWeight
+        
+        return (distanceScore * distanceWeight) + 
+               (ratingScore * ratingWeight) + 
+               (acceptanceScore * acceptanceWeight) + 
+               (completionScore * completionWeight)
     }
 }

@@ -63,10 +63,11 @@ interface SurgePriceRepository : JpaRepository<SurgePrice, UUID> {
         WHERE sp.effectiveFrom > :since
         GROUP BY sp.h3Index
         ORDER BY MAX(sp.surgeMultiplier) DESC
+        LIMIT :limit
     """)
     fun findHighestSurgeAreasSince(
         @Param("since") since: LocalDateTime,
-        limit: Int = 10
+        @Param("limit") limit: Int = 10
     ): List<Array<Any>>
 
     @Modifying

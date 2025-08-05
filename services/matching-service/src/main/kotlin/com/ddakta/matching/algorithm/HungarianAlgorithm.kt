@@ -40,10 +40,12 @@ class HungarianAlgorithm {
 
         // Step 1: Subtract row minimums
         for (i in 0 until n) {
-            val minVal = matrix[i].minOrNull() ?: 0.0
-            if (minVal < INF) {
+            val minVal = matrix[i].filter { it < INF }.minOrNull() ?: 0.0
+            if (minVal > 0 && minVal < INF) {
                 for (j in 0 until n) {
-                    matrix[i][j] -= minVal
+                    if (matrix[i][j] < INF) {
+                        matrix[i][j] -= minVal
+                    }
                 }
             }
         }
@@ -52,11 +54,15 @@ class HungarianAlgorithm {
         for (j in 0 until n) {
             var minVal = INF
             for (i in 0 until n) {
-                minVal = min(minVal, matrix[i][j])
+                if (matrix[i][j] < INF) {
+                    minVal = min(minVal, matrix[i][j])
+                }
             }
             if (minVal < INF && minVal > 0) {
                 for (i in 0 until n) {
-                    matrix[i][j] -= minVal
+                    if (matrix[i][j] < INF) {
+                        matrix[i][j] -= minVal
+                    }
                 }
             }
         }
@@ -66,9 +72,10 @@ class HungarianAlgorithm {
         val colAssignment = IntArray(n) { -1 }
 
         // Step 3: Assign initial zeros
+        val epsilon = 1e-9
         for (i in 0 until n) {
             for (j in 0 until n) {
-                if (matrix[i][j] == 0.0 && rowAssignment[i] == -1 && colAssignment[j] == -1) {
+                if (kotlin.math.abs(matrix[i][j]) < epsilon && rowAssignment[i] == -1 && colAssignment[j] == -1) {
                     rowAssignment[i] = j
                     colAssignment[j] = i
                 }
@@ -115,9 +122,10 @@ class HungarianAlgorithm {
         }
 
         // Find uncovered zero
+        val epsilon = 1e-9
         for (i in 0 until n) {
             for (j in 0 until n) {
-                if (!rowCovered[i] && !colCovered[j] && matrix[i][j] == 0.0) {
+                if (!rowCovered[i] && !colCovered[j] && kotlin.math.abs(matrix[i][j]) < epsilon) {
                     return Pair(i, j)
                 }
             }

@@ -197,7 +197,6 @@ class Ride(
 
     fun addDriverCall(driverCall: DriverCall) {
         driverCalls.add(driverCall)
-        driverCall.ride = this
     }
 
     fun recordStateTransition(event: RideEvent, metadata: Map<String, Any>? = null) {

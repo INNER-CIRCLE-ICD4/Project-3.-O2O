@@ -96,11 +96,11 @@ interface DriverCallRepository : JpaRepository<DriverCall, UUID> {
     fun findByIdWithRide(@Param("id") id: UUID): DriverCall?
     
     // 락을 사용하여 드라이버 호출 조회
-    @Query("""
-        SELECT dc FROM DriverCall dc
+    @Query(value = """
+        SELECT * FROM driver_calls dc
         WHERE dc.id = :id
         FOR UPDATE
-    """)
+    """, nativeQuery = true)
     fun findByIdWithLock(@Param("id") id: UUID): DriverCall?
     
     // 드라이버의 활성 호출 목록 조회
@@ -119,7 +119,7 @@ interface DriverCallRepository : JpaRepository<DriverCall, UUID> {
     // 운행의 대기 중인 호출 목록 조회
     @Query("""
         SELECT dc FROM DriverCall dc
-        WHERE dc.rideId = :rideId
+        WHERE dc.ride.id = :rideId
         AND dc.status = 'PENDING'
         ORDER BY dc.createdAt
     """)

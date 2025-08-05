@@ -14,20 +14,18 @@ import java.util.*
 @Repository
 interface MatchingRequestRepository : JpaRepository<MatchingRequest, UUID> {
 
-    @Query("""
-        SELECT mr FROM MatchingRequest mr
+    @Query(value = """
+        SELECT * FROM matching_requests mr
         WHERE mr.status = 'PENDING'
-        AND mr.requestedAt > :maxAge
-        ORDER BY mr.requestedAt ASC
-    """)
+        AND mr.requested_at > :maxAge
+        ORDER BY mr.requested_at ASC
+        LIMIT :limit
+    """, nativeQuery = true)
     fun findPendingRequests(
         @Param("maxAge") maxAge: LocalDateTime = LocalDateTime.now().minusSeconds(10),
         @Param("limit") limit: Int = 100
     ): List<MatchingRequest>
 
-    fun findPendingRequests(limit: Int, maxAge: Duration): List<MatchingRequest> {
-        return findPendingRequests(LocalDateTime.now().minus(maxAge), limit)
-    }
 
     @Query("SELECT mr FROM MatchingRequest mr WHERE mr.rideId = :rideId")
     fun findByRideId(@Param("rideId") rideId: UUID): MatchingRequest?

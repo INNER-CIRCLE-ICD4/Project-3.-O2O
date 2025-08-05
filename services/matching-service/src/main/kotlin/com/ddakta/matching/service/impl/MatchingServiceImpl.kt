@@ -334,7 +334,7 @@ class MatchingServiceImpl(
                 )
 
                 val driverCall = DriverCall(
-                    rideId = ride.id!!,
+                    ride = ride,
                     driverId = driver.driverId,
                     sequenceNumber = 1,
                     estimatedArrivalSeconds = estimatedArrival,

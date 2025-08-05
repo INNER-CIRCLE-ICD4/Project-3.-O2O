@@ -11,8 +11,9 @@ import java.util.*
 @Entity
 @Table(name = "driver_calls")
 class DriverCall(
-    @Column(nullable = false)
-    val rideId: UUID,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ride_id", nullable = false)
+    val ride: Ride,
 
     @Column(nullable = false)
     val driverId: UUID,
@@ -38,10 +39,6 @@ class DriverCall(
     @Embedded
     val driverLocation: Location? = null
 ) : BaseEntity() {
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ride_id", nullable = false)
-    lateinit var ride: Ride
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

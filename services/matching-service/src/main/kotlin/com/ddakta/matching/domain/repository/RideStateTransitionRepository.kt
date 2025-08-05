@@ -2,6 +2,7 @@ package com.ddakta.matching.domain.repository
 
 import com.ddakta.matching.domain.entity.RideStateTransition
 import com.ddakta.matching.domain.enum.RideStatus
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -47,4 +48,14 @@ interface RideStateTransitionRepository : JpaRepository<RideStateTransition, UUI
         @Param("fromStatus") fromStatus: RideStatus,
         @Param("since") since: LocalDateTime
     ): List<Array<Any>>
+
+    @Query("""
+        SELECT rst FROM RideStateTransition rst
+        WHERE rst.createdAt > :since
+        ORDER BY rst.createdAt DESC
+    """)
+    fun findRecentTransitions(
+        @Param("since") since: LocalDateTime,
+        pageable: Pageable
+    ): List<RideStateTransition>
 }

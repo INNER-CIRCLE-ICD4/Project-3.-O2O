@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
+import java.time.LocalDateTime
 import java.util.*
 
 @Component
@@ -98,8 +99,8 @@ class BatchMatchingProcessor(
 
     private fun fetchPendingRequests(): List<MatchingRequest> {
         return matchingRequestRepository.findPendingRequests(
-            limit = matchingProperties.batch.size,
-            maxAge = Duration.ofSeconds(10)
+            maxAge = LocalDateTime.now().minusSeconds(10),
+            limit = matchingProperties.batch.size
         )
     }
 

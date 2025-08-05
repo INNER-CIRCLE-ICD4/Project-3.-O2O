@@ -5,6 +5,7 @@ import com.ddakta.matching.domain.entity.Ride
 import com.ddakta.matching.domain.enum.DriverCallStatus
 import com.ddakta.matching.domain.enum.RideEvent
 import com.ddakta.matching.domain.repository.DriverCallRepository
+import com.ddakta.matching.domain.repository.RideRepository
 import com.ddakta.matching.domain.vo.Location
 import com.ddakta.matching.dto.internal.AvailableDriver
 import com.ddakta.matching.dto.request.RideStatusUpdateDto
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit
 @Transactional
 class DriverCallServiceImpl(
     private val driverCallRepository: DriverCallRepository,
+    private val rideRepository: RideRepository,
     private val rideService: RideService,
     private val rideEventProducer: RideEventProducer,
     private val messagingTemplate: SimpMessagingTemplate,
@@ -49,8 +51,10 @@ class DriverCallServiceImpl(
         estimatedArrival: Int?,
         estimatedFare: BigDecimal?
     ): DriverCall {
+        val ride = rideRepository.findById(rideId)
+            .orElseThrow { IllegalArgumentException("Ride not found: $rideId") }
         val driverCall = DriverCall(
-            rideId = rideId,
+            ride = ride,
             driverId = driverId,
             sequenceNumber = 1, // 기본값, 실제로는 계산 필요
             expiresAt = LocalDateTime.now().plusSeconds(30), // 30초 타임아웃
@@ -77,7 +81,7 @@ class DriverCallServiceImpl(
         
         drivers.forEachIndexed { index, driver ->
             val driverCall = DriverCall(
-                rideId = ride.id!!,
+                ride = ride,
                 driverId = driver.driverId,
                 sequenceNumber = index + 1,
                 expiresAt = LocalDateTime.now().plusSeconds(30),
@@ -136,14 +140,14 @@ class DriverCallServiceImpl(
             val savedCall = driverCallRepository.save(driverCall)
 
             // 운행에 드라이버 할당
-            val ride = rideService.assignDriver(driverCall.rideId, driverId)
+            val ride = rideService.assignDriver(driverCall.ride.id!!, driverId)
 
             // 같은 운행의 다른 드라이버 호출 취소
-            cancelOtherCallsForRide(driverCall.rideId, callId)
+            cancelOtherCallsForRide(driverCall.ride.id!!, callId)
 
             // 운행 상태 업데이트
             rideService.updateRideStatus(
-                driverCall.rideId,
+                driverCall.ride.id!!,
                 RideStatusUpdateDto(
                     event = RideEvent.ASSIGN_DRIVER,
                     metadata = mapOf(
@@ -160,7 +164,7 @@ class DriverCallServiceImpl(
             // WebSocket 알림
             notifyAcceptance(savedCall)
 
-            logger.info { "Driver $driverId accepted call $callId for ride ${driverCall.rideId}" }
+            logger.info { "Driver $driverId accepted call $callId for ride ${driverCall.ride.id}" }
 
             return DriverCallResponseDto.from(savedCall)
 
@@ -317,7 +321,7 @@ class DriverCallServiceImpl(
         val notification = mapOf(
             "type" to "DRIVER_CALL",
             "callId" to driverCall.id,
-            "rideId" to driverCall.rideId,
+            "rideId" to driverCall.ride.id!!,
             "estimatedArrival" to driverCall.estimatedArrivalSeconds,
             "estimatedFare" to driverCall.estimatedFare,
             "expiresAt" to driverCall.expiresAt
@@ -334,13 +338,13 @@ class DriverCallServiceImpl(
         val notification = mapOf(
             "type" to "CALL_ACCEPTED",
             "callId" to driverCall.id,
-            "rideId" to driverCall.rideId,
+            "rideId" to driverCall.ride.id!!,
             "driverId" to driverCall.driverId
         )
 
         // 승객에게 알림
         messagingTemplate.convertAndSend(
-            "/topic/ride/${driverCall.rideId}",
+            "/topic/ride/${driverCall.ride.id}",
             notification
         )
     }
@@ -353,7 +357,7 @@ class DriverCallServiceImpl(
         )
 
         messagingTemplate.convertAndSend(
-            "/topic/ride/${driverCall.rideId}",
+            "/topic/ride/${driverCall.ride.id}",
             notification
         )
     }
@@ -376,7 +380,7 @@ class DriverCallServiceImpl(
         val notification = mapOf(
             "type" to "CALL_CANCELLED",
             "callId" to driverCall.id,
-            "rideId" to driverCall.rideId
+            "rideId" to driverCall.ride.id!!
         )
 
         messagingTemplate.convertAndSendToUser(

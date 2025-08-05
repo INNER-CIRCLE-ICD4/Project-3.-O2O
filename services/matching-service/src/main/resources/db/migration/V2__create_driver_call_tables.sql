@@ -26,4 +26,4 @@ CREATE UNIQUE INDEX idx_driver_calls_ride_driver ON driver_calls(ride_id, driver
 
 -- Partial index for pending calls
 CREATE INDEX idx_driver_calls_pending ON driver_calls(driver_id, status, expires_at)
-    WHERE status = 'PENDING' AND expires_at > CURRENT_TIMESTAMP;
+    WHERE status = 'PENDING';

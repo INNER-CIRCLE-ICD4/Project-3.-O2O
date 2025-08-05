@@ -30,6 +30,16 @@ spring:
     producer:
       retries: 3
       
+  # Disable Feign for tests
+  cloud:
+    openfeign:
+      enabled: false
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
+      
 # Test-specific configurations
 matching:
   batch:
@@ -81,13 +91,11 @@ spring:
   config:
     activate:
       on-profile: performance
+  jpa:
+    show-sql: false
       
 # Performance test specific settings
 matching:
   batch:
     size: 100
     interval: 1000
-    
-spring:
-  jpa:
-    show-sql: false

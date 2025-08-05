@@ -18,6 +18,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-security")
     
     // Spring Cloud
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
@@ -59,6 +60,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testRuntimeOnly("com.h2database:h2")
 }
 
 tasks.bootJar {
@@ -75,6 +77,7 @@ tasks.test {
         showCauses = true
         showStackTraces = true
     }
+    jvmArgs("-Dnet.bytebuddy.experimental=true")
 }
 
 tasks.register<Test>("integrationTest") {
@@ -88,6 +91,7 @@ tasks.register<Test>("integrationTest") {
     include("**/integration/**")
     
     systemProperty("spring.profiles.active", "test")
+    jvmArgs("-Dnet.bytebuddy.experimental=true")
 }
 
 tasks.register<Test>("distributedTest") {
@@ -101,10 +105,11 @@ tasks.register<Test>("distributedTest") {
     include("**/DistributedSystemTest*")
     
     systemProperty("spring.profiles.active", "test")
+    jvmArgs("-Dnet.bytebuddy.experimental=true")
 }
 
 configure<JacocoPluginExtension> {
-    toolVersion = "0.8.8"
+    toolVersion = "0.8.12"
 }
 
 tasks.withType<JacocoReport> {
@@ -139,5 +144,183 @@ tasks.withType<JacocoCoverageVerification> {
             }
         }
     }
+}
+
+// K6 Load Testing Tasks
+tasks.register<Exec>("installK6") {
+    description = "Install K6 load testing tool"
+    group = "verification"
+    
+    doFirst {
+        val os = System.getProperty("os.name").toLowerCase()
+        when {
+            os.contains("mac") -> {
+                commandLine("brew", "install", "k6")
+            }
+            os.contains("linux") -> {
+                commandLine("sh", "-c", "wget -q -O - https://dl.k6.io/key.gpg | apt-key add - && echo 'deb https://dl.k6.io/deb stable main' | tee /etc/apt/sources.list.d/k6.list && apt-get update && apt-get install k6")
+            }
+            else -> {
+                throw GradleException("Unsupported OS for K6 installation: $os")
+            }
+        }
+    }
+    
+    isIgnoreExitValue = true
+}
+
+tasks.register<Exec>("checkK6") {
+    description = "Check if K6 is installed"
+    group = "verification"
+    
+    commandLine("k6", "version")
+    isIgnoreExitValue = true
+    
+    doLast {
+        if (executionResult.get().exitValue != 0) {
+            logger.warn("K6 is not installed. Run './gradlew installK6' to install it.")
+        }
+    }
+}
+
+tasks.register<Exec>("loadTest") {
+    description = "Run K6 load tests"
+    group = "verification"
+    
+    dependsOn("checkK6")
+    
+    workingDir = file("test-infrastructure/k6-scripts")
+    commandLine("k6", "run", 
+        "--out", "json=load-test-results.json",
+        "--summary-export=load-test-summary.json",
+        "load-test.js"
+    )
+    
+    environment("BASE_URL", System.getenv("BASE_URL") ?: "http://localhost:8080")
+    
+    doFirst {
+        logger.lifecycle("Running K6 load tests...")
+    }
+    
+    doLast {
+        if (executionResult.get().exitValue != 0) {
+            throw GradleException("Load tests failed. Check the results in test-infrastructure/k6-scripts/load-test-results.json")
+        }
+        logger.lifecycle("Load tests completed successfully")
+    }
+}
+
+tasks.register<Exec>("loadTestWithHtmlReport") {
+    description = "Run K6 load tests with HTML report generation"
+    group = "verification"
+    
+    dependsOn("loadTest")
+    
+    workingDir = file("test-infrastructure/k6-scripts")
+    commandLine("k6", "run",
+        "--out", "json=load-test-results.json",
+        "--out", "influxdb=http://localhost:8086/k6",
+        "--summary-export=load-test-summary.json",
+        "load-test.js"
+    )
+    
+    environment("BASE_URL", System.getenv("BASE_URL") ?: "http://localhost:8080")
+    
+    doLast {
+        // Generate HTML report from JSON results
+        val reportFile = file("${buildDir}/reports/k6/load-test-report.html")
+        reportFile.parentFile.mkdirs()
+        generateK6HtmlReport(
+            file("test-infrastructure/k6-scripts/load-test-summary.json"),
+            reportFile
+        )
+        logger.lifecycle("Load test report generated: ${reportFile.absolutePath}")
+    }
+}
+
+fun generateK6HtmlReport(summaryFile: File, outputFile: File) {
+    if (!summaryFile.exists()) {
+        logger.warn("K6 summary file not found: ${summaryFile.absolutePath}")
+        return
+    }
+    
+    val summaryJson = summaryFile.readText()
+    val htmlTemplate = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>K6 Load Test Report - Matching Service</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { color: #333; }
+        .metric { 
+            background: #f5f5f5; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        .metric.failed { border-left-color: #f44336; }
+        .metric-name { font-weight: bold; }
+        .metric-value { float: right; }
+        .threshold { color: #666; font-size: 0.9em; }
+        .passed { color: #4CAF50; }
+        .failed { color: #f44336; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <h1>K6 Load Test Report - Matching Service</h1>
+    <div id="report-content">
+        <!-- Report content will be injected here by JavaScript -->
+    </div>
+    <script>
+        // Load and parse the K6 summary JSON
+        const summaryData = $summaryJson;
+        
+        function generateReport(data) {
+            let html = '<h2>Test Summary</h2>';
+            
+            // Add metrics
+            html += '<h3>Performance Metrics</h3>';
+            for (const [key, metric] of Object.entries(data.metrics)) {
+                const passed = metric.thresholds ? Object.values(metric.thresholds).every(t => t.ok) : true;
+                html += '<div class="metric ' + (passed ? '' : 'failed') + '">' +
+                    '<span class="metric-name">' + key + '</span>' +
+                    '<span class="metric-value">' + formatMetricValue(metric) + '</span>' +
+                    (metric.thresholds ? '<div class="threshold">' + formatThresholds(metric.thresholds) + '</div>' : '') +
+                '</div>';
+            }
+            
+            document.getElementById('report-content').innerHTML = html;
+        }
+        
+        function formatMetricValue(metric) {
+            if (metric.values) {
+                return Object.entries(metric.values)
+                    .map(([k, v]) => k + ': ' + v)
+                    .join(', ');
+            }
+            return metric.value || 'N/A';
+        }
+        
+        function formatThresholds(thresholds) {
+            return Object.entries(thresholds)
+                .map(([name, result]) => {
+                    const status = result.ok ? '<span class="passed">✓</span>' : '<span class="failed">✗</span>';
+                    return status + ' ' + name;
+                })
+                .join(' | ');
+        }
+        
+        generateReport(summaryData);
+    </script>
+</body>
+</html>
+    """.trimIndent()
+    
+    outputFile.writeText(htmlTemplate)
 }
 
