@@ -34,6 +34,16 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 
+/**
+ * 매칭 서비스 구현체
+ * 
+ * 승객과 드라이버를 매칭하는 핵심 비즈니스 로직을 담당합니다.
+ * 주요 기능:
+ * 1. 배치 매칭 처리: 여러 매칭 요청을 효율적으로 동시 처리
+ * 2. 지역별 그룹핑: H3 인덱스를 기반으로 근처 요청을 그룹화
+ * 3. 분산 락: Redis를 통한 다중 인스턴스 환경에서의 동시성 제어
+ * 4. 재시도 로직: 실패 시 최대 3회까지 재시도
+ */
 @Service
 @Transactional
 class MatchingServiceImpl(
@@ -65,6 +75,19 @@ class MatchingServiceImpl(
         const val BATCH_SIZE = 100
     }
 
+    /**
+     * 배치 매칭 처리 메인 메서드
+     * 
+     * 분산 환경에서의 동시성 제어를 위해 Redisson FairLock을 사용합니다.
+     * FairLock은 요청 순서를 보장하여 공정한 락 획듍을 보장합니다.
+     * 
+     * 동작 방식:
+     * 1. 락 획듍 시도 (0초 대기, 최대 5초 보유)
+     * 2. 락을 획듍한 경우에만 매칭 처리 수행
+     * 3. 처리 완료 후 반드시 락 해제
+     * 
+     * @return 매칭 결과 리스트
+     */
     override fun processMatchingBatch(): List<MatchingResult> {
         val processingTime = measureTimeMillis {
             val lock = redissonClient.getFairLock(MATCHING_LOCK_KEY)
@@ -87,9 +110,22 @@ class MatchingServiceImpl(
         return emptyList()
     }
 
+    /**
+     * 매칭 배치 내부 처리 로직
+     * 
+     * 실제 매칭 처리를 수행하는 핵심 로직입니다.
+     * 
+     * 처리 단계:
+     * 1. 대기 중인 매칭 요청 조회 (10분 이내 요청)
+     * 2. H3 인덱스 기반 지역별 그룹핑
+     * 3. 각 지역별로 병렬 매칭 처리
+     * 4. 오류 발생 시 graceful degradation
+     */
     private fun processMatchingBatchInternal(): List<MatchingResult> {
         // 1. 활성 매칭 요청 조회
         // TODO: 임시 수정 - findActiveRequests 대신 findPendingRequests 사용
+        // 10분 이내에 생성된 대기 중인 요청만 조회하여
+        // 오래된 요청이 계속 대기하는 것을 방지합니다
         val activeRequests = matchingRequestRepository.findPendingRequests(
             LocalDateTime.now().minusMinutes(10), // maxAge
             BATCH_SIZE
@@ -103,10 +139,14 @@ class MatchingServiceImpl(
         logger.info { "Processing ${activeRequests.size} matching requests" }
 
         // 2. 지역별로 요청 그룹화 (H3 인덱스 기준)
+        // H3는 Uber가 개발한 육각형 기반 지리공간 인덱싱 시스템입니다.
+        // 같은 H3 인덱스의 요청들은 지리적으로 가까우므로 함께 처리합니다.
         val requestsByH3 = activeRequests.groupBy { it.pickupH3 }
         val results = mutableListOf<MatchingResult>()
 
         // 3. 각 지역별로 매칭 처리
+        // 병렬 처리가 가능하지만, 현재는 순차적으로 처리합니다.
+        // 향후 성능 개선을 위해 코루틴이나 병렬 스트림을 사용할 수 있습니다.
         requestsByH3.forEach { (h3Index, requests) ->
             try {
                 val regionResults = processRegionMatching(h3Index, requests)
@@ -130,11 +170,23 @@ class MatchingServiceImpl(
         return results
     }
 
+    /**
+     * 지역별 매칭 처리
+     * 
+     * 특정 H3 지역의 모든 매칭 요청을 처리합니다.
+     * 헝가리안 알고리즘을 사용하여 전체 최적화를 달성합니다.
+     * 
+     * @param h3Index 지역 H3 인덱스
+     * @param requests 해당 지역의 매칭 요청 리스트
+     * @return 매칭 결과 리스트
+     */
     private fun processRegionMatching(
         h3Index: String,
         requests: List<MatchingRequest>
     ): List<MatchingResult> {
         // 1. 해당 지역의 가용 드라이버 조회
+        // 주변 H3 인덱스를 포함하여 더 넓은 범위에서 드라이버를 찾습니다.
+        // location-service가 사용 불가한 경우 fallback으로 예외 처리합니다.
         val availableDrivers = try {
             val nearbyH3Indexes = getNearbyH3Indexes(h3Index)
             locationServiceClient.getAvailableDrivers(nearbyH3Indexes)

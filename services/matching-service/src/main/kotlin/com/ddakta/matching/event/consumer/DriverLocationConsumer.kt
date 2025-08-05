@@ -48,14 +48,14 @@ class DriverLocationConsumer(
         }
         
         try {
-            // Cache driver location in Redis
+            // Redis에 드라이버 위치 캐시
             cacheDriverLocation(event)
             
-            // Check if driver has active ride
+            // 드라이버가 활성 운행을 가지고 있는지 확인
             val activeRide = rideService.getActiveRideForDriver(event.driverId)
             
             if (activeRide != null) {
-                // Broadcast location update to ride participants via WebSocket
+                // WebSocket을 통해 운행 참가자에게 위치 업데이트 브로드캐스트
                 val locationUpdate = RideLocationUpdateDto(
                     rideId = activeRide.id,
                     driverId = event.driverId,
@@ -99,7 +99,7 @@ class DriverLocationConsumer(
         }
         
         try {
-            // Update driver status in cache
+            // 캐시에서 드라이버 상태 업데이트
             val key = "$DRIVER_STATUS_KEY${event.driverId}"
             redisTemplate.opsForValue().set(
                 key,
@@ -108,21 +108,21 @@ class DriverLocationConsumer(
                 TimeUnit.MINUTES
             )
             
-            // Handle status-specific logic
+            // 상태별 로직 처리
             when (event.newStatus) {
                 "OFFLINE" -> {
-                    // Remove driver from available pool
+                    // 가용 풀에서 드라이버 제거
                     removeDriverFromAvailablePool(event.driverId)
                 }
                 "ONLINE" -> {
-                    // Add driver to available pool if not on a ride
+                    // 운행 중이 아니면 가용 풀에 드라이버 추가
                     val activeRide = rideService.getActiveRideForDriver(event.driverId)
                     if (activeRide == null) {
                         addDriverToAvailablePool(event.driverId, event.h3Index)
                     }
                 }
                 "ON_TRIP" -> {
-                    // Driver is on an active trip
+                    // 드라이버가 활성 운행 중
                     removeDriverFromAvailablePool(event.driverId)
                 }
             }
@@ -176,7 +176,7 @@ class DriverLocationConsumer(
             TimeUnit.MINUTES
         )
         
-        // Also update H3 index-based location tracking
+        // H3 인덱스 기반 위치 추적도 업데이트
         if (event.isOnline) {
             val h3Key = "drivers:h3:${event.h3Index}"
             redisTemplate.opsForSet().add(h3Key, event.driverId.toString())
@@ -195,7 +195,7 @@ class DriverLocationConsumer(
     }
     
     private fun removeDriverFromAvailablePool(driverId: UUID) {
-        // Remove from all H3 indexes (we might not know which one)
+        // 모든 H3 인덱스에서 제거 (어느 것인지 모를 수 있음)
         val pattern = "drivers:available:*"
         val keys = redisTemplate.keys(pattern)
         

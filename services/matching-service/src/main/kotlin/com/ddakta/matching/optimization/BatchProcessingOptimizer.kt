@@ -23,41 +23,41 @@ class BatchProcessingOptimizer(
     private val logger = KotlinLogging.logger {}
     
     companion object {
-        // Dynamic batch size boundaries
+        // 동적 배치 크기 경계값
         const val MIN_BATCH_SIZE = 10
         const val MAX_BATCH_SIZE = 500
         const val DEFAULT_BATCH_SIZE = 100
         
-        // Dynamic interval boundaries (milliseconds)
+        // 동적 간격 경계값 (밀리초)
         const val MIN_INTERVAL_MS = 500L
         const val MAX_INTERVAL_MS = 5000L
         const val DEFAULT_INTERVAL_MS = 1000L
         
-        // Performance thresholds
-        const val TARGET_PROCESSING_TIME_MS = 800L // 80% of 1 second
+        // 성능 임계값
+        const val TARGET_PROCESSING_TIME_MS = 800L // 1초의 80%
         const val MAX_QUEUE_SIZE = 10000
         const val LATENCY_THRESHOLD_MS = 1500L
         
-        // Adjustment factors
+        // 조정 요소
         const val SIZE_INCREASE_FACTOR = 1.2
         const val SIZE_DECREASE_FACTOR = 0.8
         const val INTERVAL_ADJUSTMENT_STEP = 100L
         
-        // Redis keys
+        // Redis 키
         const val BATCH_METRICS_KEY = "batch:metrics:"
         const val BATCH_CONFIG_KEY = "batch:config:"
     }
     
-    // Current configuration
+    // 현재 설정
     private var currentBatchSize = AtomicInteger(DEFAULT_BATCH_SIZE)
     private var currentInterval = AtomicLong(DEFAULT_INTERVAL_MS)
     
-    // Performance tracking
+    // 성능 추적
     private val processingTimes = ConcurrentHashMap<Long, Long>()
     private val queueSizes = ConcurrentHashMap<Long, Int>()
     private val successRates = ConcurrentHashMap<Long, Double>()
     
-    // Metrics
+    // 메트릭
     private val batchSizeGauge = meterRegistry.gauge("matching.batch.size", currentBatchSize)
     private val intervalGauge = meterRegistry.gauge("matching.batch.interval", currentInterval)
     private val processingTimer = Timer.builder("matching.batch.processing.time")
@@ -80,15 +80,15 @@ class BatchProcessingOptimizer(
         try {
             val timestamp = System.currentTimeMillis()
             
-            // Record metrics
+            // 메트릭 기록
             processingTimes[timestamp] = lastProcessingTime
             queueSizes[timestamp] = currentQueueSize
             successRates[timestamp] = successRate
             
-            // Clean old metrics (keep last 5 minutes)
+            // 오래된 메트릭 정리 (최근 5분 유지)
             cleanOldMetrics(timestamp - 300000)
             
-            // Calculate adjustments
+            // 조정값 계산
             val newSize = calculateOptimalBatchSize(
                 currentQueueSize,
                 lastProcessingTime,
@@ -101,7 +101,7 @@ class BatchProcessingOptimizer(
                 newSize
             )
             
-            // Apply changes if significant
+            // 중요한 변경사항이 있으면 적용
             if (shouldAdjustBatchSize(newSize)) {
                 currentBatchSize.set(newSize)
                 logger.info { "Adjusted batch size to $newSize" }
@@ -112,10 +112,10 @@ class BatchProcessingOptimizer(
                 logger.info { "Adjusted batch interval to ${newInterval}ms" }
             }
             
-            // Persist configuration
+            // 설정 저장
             persistConfiguration()
             
-            // Record optimization metrics
+            // 최적화 메트릭 기록
             recordOptimizationMetrics(currentQueueSize, lastProcessingTime, successRate)
             
             return getCurrentBatchConfig()
@@ -143,7 +143,7 @@ class BatchProcessingOptimizer(
     }
     
     fun applyEmergencyMode() {
-        // In emergency mode, prioritize latency over throughput
+        // 비상 모드에서는 처리량보다 지연 시간을 우선시
         currentBatchSize.set(MIN_BATCH_SIZE)
         currentInterval.set(MIN_INTERVAL_MS)
         
@@ -168,34 +168,34 @@ class BatchProcessingOptimizer(
     ): Int {
         val currentSize = currentBatchSize.get()
         
-        // Queue pressure factor
+        // 큐 압력 요소
         val queuePressure = queueSize.toDouble() / MAX_QUEUE_SIZE
         
-        // Processing efficiency factor
+        // 처리 효율 요소
         val processingEfficiency = TARGET_PROCESSING_TIME_MS.toDouble() / processingTime
         
-        // Success rate factor
+        // 성공률 요소
         val successFactor = successRate
         
-        // Combined score (0.0 to 1.0)
+        // 결합 점수 (0.0에서 1.0)
         val performanceScore = (processingEfficiency * 0.5 + 
                                successFactor * 0.3 + 
                                (1 - queuePressure) * 0.2)
         
         return when {
-            // High queue pressure - increase batch size
+            // 높은 큐 압력 - 배치 크기 증가
             queuePressure > 0.7 && processingTime < TARGET_PROCESSING_TIME_MS -> {
                 min((currentSize * SIZE_INCREASE_FACTOR).toInt(), MAX_BATCH_SIZE)
             }
-            // Low efficiency - decrease batch size
+            // 낮은 효율 - 배치 크기 감소
             processingEfficiency < 0.5 || successRate < 0.8 -> {
                 max((currentSize * SIZE_DECREASE_FACTOR).toInt(), MIN_BATCH_SIZE)
             }
-            // Good performance with room to grow
+            // 성장 여지가 있는 좋은 성능
             performanceScore > 0.8 && queuePressure > 0.3 -> {
                 min((currentSize * 1.1).toInt(), MAX_BATCH_SIZE)
             }
-            // Stable performance
+            // 안정적인 성능
             else -> currentSize
         }
     }
@@ -207,26 +207,26 @@ class BatchProcessingOptimizer(
     ): Long {
         val currentIntervalMs = currentInterval.get()
         
-        // Calculate target processing rate
+        // 목표 처리 비율 계산
         val targetRate = queueSize.toDouble() / batchSize
         
-        // Latency consideration
+        // 지연 시간 고려사항
         val latencyFactor = if (processingTime > LATENCY_THRESHOLD_MS) {
-            0.8 // Reduce interval to catch up
+            0.8 // 따라잡기 위해 간격 감소
         } else {
             1.0
         }
         
         return when {
-            // High queue pressure - reduce interval
+            // 높은 큐 압력 - 간격 감소
             targetRate > 5 -> {
                 max((currentIntervalMs - INTERVAL_ADJUSTMENT_STEP) * latencyFactor, MIN_INTERVAL_MS.toDouble()).toLong()
             }
-            // Low queue pressure - increase interval
+            // 낮은 큐 압력 - 간격 증가
             targetRate < 1 -> {
                 min(currentIntervalMs + INTERVAL_ADJUSTMENT_STEP, MAX_INTERVAL_MS)
             }
-            // Stable
+            // 안정적
             else -> currentIntervalMs
         }
     }
@@ -234,13 +234,13 @@ class BatchProcessingOptimizer(
     private fun shouldAdjustBatchSize(newSize: Int): Boolean {
         val currentSize = currentBatchSize.get()
         val changePct = kotlin.math.abs(newSize - currentSize).toDouble() / currentSize
-        return changePct > 0.1 // Only adjust if change is more than 10%
+        return changePct > 0.1 // 변경사항이 10% 이상일 때만 조정
     }
     
     private fun shouldAdjustInterval(newInterval: Long): Boolean {
         val currentIntervalMs = currentInterval.get()
         val changePct = kotlin.math.abs(newInterval - currentIntervalMs).toDouble() / currentIntervalMs
-        return changePct > 0.1 // Only adjust if change is more than 10%
+        return changePct > 0.1 // 변경사항이 10% 이상일 때만 조정
     }
     
     private fun calculateThroughput(): Double {

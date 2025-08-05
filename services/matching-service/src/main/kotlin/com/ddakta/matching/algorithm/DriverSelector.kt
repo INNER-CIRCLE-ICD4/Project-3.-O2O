@@ -29,13 +29,13 @@ class DriverSelector(
             return emptyList()
         }
 
-        // Filter out excluded drivers and ineligible drivers
+        // 제외된 드라이버와 부적격 드라이버 필터링
         val eligibleDrivers = availableDrivers
             .filter { it.driverId !in excludedDriverIds }
             .filter { matchingScoreCalculator.isDriverEligible(it) }
             .filter { driver ->
                 val distance = distanceCalculator.calculate(pickupLocation, driver.currentLocation)
-                distance <= matchingProperties.search.radiusKm * 1000 // Convert km to meters
+                distance <= matchingProperties.search.radiusKm * 1000 // km를 미터로 변환
             }
 
         if (eligibleDrivers.isEmpty()) {
@@ -43,7 +43,7 @@ class DriverSelector(
             return emptyList()
         }
 
-        // Calculate scores and distances for each driver
+        // 각 드라이버의 점수와 거리 계산
         val driversWithMetrics = eligibleDrivers.map { driver ->
             val distance = distanceCalculator.calculate(pickupLocation, driver.currentLocation)
             val estimatedArrival = distanceCalculator.estimateTravelTime(distance)
@@ -52,11 +52,11 @@ class DriverSelector(
                 driver = driver,
                 distance = distance,
                 estimatedArrivalSeconds = estimatedArrival,
-                score = 0.0 // Will be calculated separately if needed
+                score = 0.0 // 필요시 별도로 계산될 예정
             )
         }
 
-        // Apply selection strategy
+        // 선택 전략 적용
         return when (SelectionStrategy.BALANCED) {
             SelectionStrategy.CLOSEST_FIRST -> selectClosestDrivers(driversWithMetrics, maxDrivers)
             SelectionStrategy.HIGHEST_RATED -> selectHighestRatedDrivers(driversWithMetrics, maxDrivers)
@@ -88,17 +88,17 @@ class DriverSelector(
         drivers: List<DriverWithMetrics>,
         maxDrivers: Int
     ): List<AvailableDriver> {
-        // Sort by a combination of factors
+        // 여러 요소를 조합하여 정렬
         return drivers
             .sortedWith(
                 compareBy(
-                    // First tier: Very close drivers (< 500m) by rating
+                    // 1순위: 매우 가까운 드라이버 (< 500m) 평점순
                     { if (it.distance < 500) -1 else 0 },
                     { -it.driver.rating },
-                    // Second tier: Close drivers (< 1km) by acceptance rate
+                    // 2순위: 가까운 드라이버 (< 1km) 수락률순
                     { if (it.distance < 1000) -1 else 0 },
                     { -it.driver.acceptanceRate },
-                    // Third tier: All others by distance
+                    // 3순위: 나머지 모두 거리순
                     { it.distance }
                 )
             )
@@ -128,15 +128,15 @@ class DriverSelector(
         rideRequirements: RideRequirements
     ): List<AvailableDriver> {
         return drivers.filter { driver ->
-            // Check vehicle type if required
+            // 필요시 차량 유형 확인
             if (rideRequirements.requiredVehicleType != null) {
                 driver.vehicleType == rideRequirements.requiredVehicleType
             } else true
         }.filter { driver ->
-            // Check minimum rating
+            // 최소 평점 확인
             driver.rating >= rideRequirements.minimumRating
         }.filter { driver ->
-            // Check minimum completed trips
+            // 최소 완료 여행 수 확인
             driver.completedTrips >= rideRequirements.minimumCompletedTrips
         }
     }

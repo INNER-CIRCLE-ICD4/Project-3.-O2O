@@ -28,8 +28,8 @@ class DistanceCalculator {
     }
     
     /**
-     * Calculate distance between two locations using Haversine formula
-     * @return distance in meters
+     * 하버사인 공식을 사용하여 두 위치 간의 거리 계산
+     * @return 미터 단위의 거리
      */
     fun calculate(from: Location, to: Location): Double {
         val lat1Rad = Math.toRadians(from.latitude)
@@ -43,14 +43,14 @@ class DistanceCalculator {
         
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
         
-        return EARTH_RADIUS_KM * c * 1000 // Return in meters
+        return EARTH_RADIUS_KM * c * 1000 // 미터 단위로 반환
     }
     
     /**
-     * Calculate estimated travel time based on distance and average speed
-     * @param distanceMeters distance in meters
-     * @param averageSpeedKmh average speed in km/h (default: 30 km/h for city driving)
-     * @return estimated time in seconds
+     * 거리와 평균 속도를 기반으로 예상 이동 시간 계산
+     * @param distanceMeters 미터 단위의 거리
+     * @param averageSpeedKmh km/h 단위의 평균 속도 (기본값: 도심 운전 30 km/h)
+     * @return 초 단위의 예상 시간
      */
     fun estimateTravelTime(distanceMeters: Double, averageSpeedKmh: Double = 30.0): Int {
         val distanceKm = distanceMeters / 1000.0
@@ -59,15 +59,15 @@ class DistanceCalculator {
     }
     
     /**
-     * Check if a location is within a certain radius of another location
+     * 한 위치가 다른 위치의 특정 반경 내에 있는지 확인
      */
     fun isWithinRadius(center: Location, point: Location, radiusMeters: Double): Boolean {
         return calculate(center, point) <= radiusMeters
     }
     
     /**
-     * Calculate bearing (direction) from one location to another
-     * @return bearing in degrees (0-360)
+     * 한 위치에서 다른 위치로의 방위각(방향) 계산
+     * @return 도 단위의 방위각 (0-360)
      */
     fun calculateBearing(from: Location, to: Location): Double {
         val lat1Rad = Math.toRadians(from.latitude)

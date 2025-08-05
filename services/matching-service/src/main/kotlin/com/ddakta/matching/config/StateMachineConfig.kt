@@ -27,43 +27,43 @@ class StateMachineConfig : EnumStateMachineConfigurerAdapter<RideStatus, RideEve
 
     override fun configure(transitions: StateMachineTransitionConfigurer<RideStatus, RideEvent>) {
         transitions
-            // Request to Match
+            // 요청에서 매칭으로
             .withExternal()
             .source(RideStatus.REQUESTED).target(RideStatus.MATCHED)
             .event(RideEvent.MATCH_FOUND)
             .and()
             
-            // Match to Driver Assigned
+            // 매칭에서 드라이버 할당으로
             .withExternal()
             .source(RideStatus.MATCHED).target(RideStatus.DRIVER_ASSIGNED)
             .event(RideEvent.DRIVER_ACCEPTED)
             .and()
             
-            // Driver Assigned to En Route
+            // 드라이버 할당에서 픽업 이동 중으로
             .withExternal()
             .source(RideStatus.DRIVER_ASSIGNED).target(RideStatus.EN_ROUTE_TO_PICKUP)
             .event(RideEvent.DRIVER_EN_ROUTE)
             .and()
             
-            // En Route to Arrived
+            // 픽업 이동 중에서 픽업 도착으로
             .withExternal()
             .source(RideStatus.EN_ROUTE_TO_PICKUP).target(RideStatus.ARRIVED_AT_PICKUP)
             .event(RideEvent.DRIVER_ARRIVED)
             .and()
             
-            // Arrived to On Trip
+            // 픽업 도착에서 운행 중으로
             .withExternal()
             .source(RideStatus.ARRIVED_AT_PICKUP).target(RideStatus.ON_TRIP)
             .event(RideEvent.TRIP_STARTED)
             .and()
             
-            // On Trip to Completed
+            // 운행 중에서 운행 완료로
             .withExternal()
             .source(RideStatus.ON_TRIP).target(RideStatus.COMPLETED)
             .event(RideEvent.TRIP_COMPLETED)
             .and()
             
-            // Cancellation from various states
+            // 다양한 상태에서 취소
             .withExternal()
             .source(RideStatus.REQUESTED).target(RideStatus.CANCELLED)
             .event(RideEvent.RIDE_CANCELLED)

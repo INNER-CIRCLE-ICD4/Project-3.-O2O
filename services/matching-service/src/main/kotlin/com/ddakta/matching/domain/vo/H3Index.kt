@@ -12,14 +12,14 @@ data class H3Index(
     }
     
     fun getParent(resolution: Int): H3Index {
-        // In a real implementation, this would use the H3 library
-        // For now, returning the same value as a placeholder
+        // 실제 구현에서는 H3 라이브러리를 사용할 예정
+        // 현재는 플레이스홀더로 동일한 값 반환
         return this
     }
     
     fun getNeighbors(): List<H3Index> {
-        // In a real implementation, this would use the H3 library
-        // For now, returning an empty list as a placeholder
+        // 실제 구현에서는 H3 라이브러리를 사용할 예정
+        // 현재는 플레이스홀더로 빈 리스트 반환
         return emptyList()
     }
     

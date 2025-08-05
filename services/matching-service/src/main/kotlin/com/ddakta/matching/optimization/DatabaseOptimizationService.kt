@@ -27,24 +27,24 @@ class DatabaseOptimizationService(
     private val logger = KotlinLogging.logger {}
     
     companion object {
-        // Connection pool boundaries
+        // 연결 풀 경계값
         const val MIN_POOL_SIZE = 5
         const val MAX_POOL_SIZE = 50
         const val DEFAULT_POOL_SIZE = 20
         
-        // Performance thresholds
+        // 성능 임계값
         const val TARGET_CONNECTION_WAIT_MS = 100L
         const val MAX_CONNECTION_WAIT_MS = 1000L
         const val SLOW_QUERY_THRESHOLD_MS = 100L
         
-        // Query cache settings
+        // 쿼리 캐시 설정
         const val QUERY_CACHE_TTL_SECONDS = 300L
         const val MAX_CACHED_QUERIES = 1000
         
-        // Index optimization
-        const val INDEX_USAGE_THRESHOLD = 0.7 // 70% usage to consider effective
+        // 인덱스 최적화
+        const val INDEX_USAGE_THRESHOLD = 0.7 // 효과적으로 간주할 70% 사용률
         
-        // Redis keys
+        // Redis 키
         const val QUERY_STATS_KEY = "db:query:stats:"
         const val SLOW_QUERY_KEY = "db:query:slow:"
         const val POOL_METRICS_KEY = "db:pool:metrics:"
@@ -79,14 +79,14 @@ class DatabaseOptimizationService(
         var newPoolSize: Int? = null
         
         try {
-            // Analyze connection usage patterns
+            // 연결 사용 패턴 분석
             val utilizationRate = if (metrics.totalConnections > 0) {
                 metrics.activeConnections.toDouble() / metrics.totalConnections
             } else {
                 0.0
             }
             
-            // High wait times - increase pool size
+            // 높은 대기 시간 - 풀 크기 증가
             if (metrics.connectionWaitTime > TARGET_CONNECTION_WAIT_MS && 
                 metrics.threadsAwaitingConnection > 0) {
                 
@@ -101,7 +101,7 @@ class DatabaseOptimizationService(
                 }
             }
             
-            // Low utilization - decrease pool size
+            // 낮은 활용도 - 풀 크기 감소
             if (utilizationRate < 0.3 && metrics.totalConnections > MIN_POOL_SIZE) {
                 val suggestedSize = max(
                     (metrics.totalConnections * 0.8).toInt(),
@@ -112,13 +112,13 @@ class DatabaseOptimizationService(
                 recommendations.add("Decrease pool size to $suggestedSize due to low utilization")
             }
             
-            // Apply optimizations if needed
+            // 필요시 최적화 적용
             if (newPoolSize != null && dataSource is HikariDataSource) {
                 adjustPoolSize(newPoolSize)
                 recommendations.add("Pool size adjusted successfully")
             }
             
-            // Additional recommendations
+            // 추가 권장사항
             if (metrics.connectionWaitTime > MAX_CONNECTION_WAIT_MS) {
                 recommendations.add("Critical: Connection wait time exceeds threshold")
             }
@@ -159,28 +159,28 @@ class DatabaseOptimizationService(
     
     fun optimizeQuery(query: String): QueryOptimizationResult {
         return try {
-            // Analyze query execution plan
+            // 쿼리 실행 계획 분석
             val explainQuery = "EXPLAIN (ANALYZE, BUFFERS) $query"
             val executionPlan = jdbcTemplate.queryForList(explainQuery)
             
             val recommendations = mutableListOf<String>()
             var optimizedQuery = query
             
-            // Parse execution plan for optimization opportunities
+            // 최적화 기회를 위한 실행 계획 분석
             executionPlan.forEach { row ->
                 val planText = row.values.joinToString(" ")
                 
-                // Check for sequential scans
+                // 순차 스캔 확인
                 if (planText.contains("Seq Scan", ignoreCase = true)) {
                     recommendations.add("Consider adding index to avoid sequential scan")
                 }
                 
-                // Check for missing indexes
+                // 누락된 인덱스 확인
                 if (planText.contains("Filter:", ignoreCase = true)) {
                     recommendations.add("Consider adding index on filter columns")
                 }
                 
-                // Check for inefficient joins
+                // 비효율적인 조인 확인
                 if (planText.contains("Nested Loop", ignoreCase = true) && 
                     planText.contains("rows=", ignoreCase = true)) {
                     val rowsMatch = Regex("rows=(\\d+)").find(planText)
@@ -191,7 +191,7 @@ class DatabaseOptimizationService(
                 }
             }
             
-            // Check for common optimization patterns
+            // 일반적인 최적화 패턴 확인
             if (query.contains("SELECT *", ignoreCase = true)) {
                 recommendations.add("Specify only required columns instead of SELECT *")
                 optimizedQuery = optimizedQuery.replace("SELECT *", "SELECT /* specific columns */")
@@ -222,7 +222,7 @@ class DatabaseOptimizationService(
     
     fun analyzeIndexUsage(): IndexAnalysisResult {
         return try {
-            // Query for index usage statistics
+            // 인덱스 사용 통계 쿼리
             val indexStats = jdbcTemplate.queryForList("""
                 SELECT 
                     schemaname,
@@ -255,7 +255,7 @@ class DatabaseOptimizationService(
                 }
             }
             
-            // Generate recommendations
+            // 권장사항 생성
             if (unusedIndexes.isNotEmpty()) {
                 recommendations.add("Consider dropping unused indexes: ${unusedIndexes.take(3).joinToString()}")
             }
@@ -264,7 +264,7 @@ class DatabaseOptimizationService(
                 recommendations.add("Review inefficient indexes: ${inefficientIndexes.take(3).joinToString()}")
             }
             
-            // Check for missing indexes on foreign keys
+            // 외래 키에 누락된 인덱스 확인
             val missingFKIndexes = checkMissingForeignKeyIndexes()
             if (missingFKIndexes.isNotEmpty()) {
                 recommendations.add("Add indexes on foreign keys: ${missingFKIndexes.joinToString()}")
@@ -285,25 +285,25 @@ class DatabaseOptimizationService(
     
     fun recordQueryExecution(query: String, executionTime: Long) {
         try {
-            // Normalize query for grouping
+            // 그룹화를 위한 쿼리 정규화
             val normalizedQuery = normalizeQuery(query)
             
-            // Record execution time
+            // 실행 시간 기록
             queryExecutionTimes.computeIfAbsent(normalizedQuery) { mutableListOf() }
                 .add(executionTime)
             
-            // Keep only recent executions
+            // 최근 실행 기록만 유지
             val executions = queryExecutionTimes[normalizedQuery]!!
             if (executions.size > 100) {
                 executions.removeAt(0)
             }
             
-            // Track slow queries
+            // 느린 쿼리 추적
             if (executionTime > SLOW_QUERY_THRESHOLD_MS) {
                 updateSlowQueryStats(normalizedQuery, executionTime)
             }
             
-            // Record metrics
+            // 메트릭 기록
             meterRegistry.timer("db.query.execution", "query", normalizedQuery)
                 .record(Duration.ofMillis(executionTime))
             
@@ -312,16 +312,16 @@ class DatabaseOptimizationService(
         }
     }
     
-    @Scheduled(fixedDelay = 60000) // Every minute
+    @Scheduled(fixedDelay = 60000) // 매분마다
     fun performPeriodicOptimization() {
         try {
-            // Optimize connection pool
+            // 연결 풀 최적화
             val poolResult = optimizeConnectionPool()
             if (poolResult.recommendations.isNotEmpty()) {
                 logger.info { "Pool optimization: ${poolResult.recommendations.joinToString()}" }
             }
             
-            // Clean up old metrics
+            // 오래된 메트릭 정리
             cleanupOldMetrics()
             
         } catch (e: Exception) {
@@ -364,18 +364,18 @@ class DatabaseOptimizationService(
     }
     
     private fun getAverageConnectionWaitTime(): Double {
-        // This would typically come from HikariCP metrics
-        // For now, returning a placeholder
+        // 일반적으로 HikariCP 메트릭에서 가져온다
+        // 현재는 플레이스홀더 반환
         return 50.0
     }
     
     private fun normalizeQuery(query: String): String {
-        // Remove specific values to group similar queries
+        // 비슷한 쿼리를 그룹화하기 위해 특정 값 제거
         return query
             .replace(Regex("\\b\\d+\\b"), "?")
             .replace(Regex("'[^']*'"), "?")
             .trim()
-            .take(200) // Limit length
+            .take(200) // 길이 제한
     }
     
     private fun updateSlowQueryStats(query: String, executionTime: Long) {
@@ -412,13 +412,13 @@ class DatabaseOptimizationService(
     }
     
     private fun checkMissingForeignKeyIndexes(): List<String> {
-        // This would check for foreign keys without indexes
-        // Simplified implementation
+        // 인덱스가 없는 외래 키를 확인한다
+        // 단순화된 구현
         return emptyList()
     }
     
     private fun calculateEstimatedImprovement(recommendations: List<String>): Double {
-        // Estimate improvement based on recommendations
+        // 권장사항을 기반으로 개선 정도 추정
         var improvement = 0.0
         
         recommendations.forEach { rec ->
@@ -430,7 +430,7 @@ class DatabaseOptimizationService(
             }
         }
         
-        return min(improvement, 0.8) // Cap at 80% improvement
+        return min(improvement, 0.8) // 80% 개선으로 제한
     }
     
     private fun recordPoolMetrics(metrics: ConnectionPoolMetrics) {
@@ -458,14 +458,14 @@ class DatabaseOptimizationService(
     }
     
     private fun cleanupOldMetrics() {
-        // Clean up query execution times older than 1 hour
+        // 1시간 이전의 쿼리 실행 시간 정리
         val cutoff = System.currentTimeMillis() - 3600000
         
         queryExecutionTimes.forEach { (query, times) ->
             times.removeIf { it < cutoff }
         }
         
-        // Remove empty entries
+        // 빈 항목 제거
         queryExecutionTimes.entries.removeIf { it.value.isEmpty() }
     }
     

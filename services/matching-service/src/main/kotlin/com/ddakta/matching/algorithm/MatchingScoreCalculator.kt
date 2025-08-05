@@ -68,7 +68,7 @@ class MatchingScoreCalculator(
                     drivers[j],
                     requests[i].second
                 )
-                // Convert score to cost (higher score = lower cost)
+                // 점수를 비용으로 변환 (높은 점수 = 낮은 비용)
                 matrix[i][j] = 1.0 - score.totalScore
             }
         }
@@ -77,16 +77,16 @@ class MatchingScoreCalculator(
     }
 
     private fun normalizeDistance(distanceMeters: Double): Double {
-        // Normalize distance to 0-1 scale
-        // 0m = score 1.0, 5000m+ = score 0.0
+        // 거리를 0-1 범위로 정규화
+        // 0m = 점수 1.0, 5000m+ = 점수 0.0
         val maxDistance = 5000.0
         val normalized = 1.0 - min(distanceMeters / maxDistance, 1.0)
         return max(0.0, normalized)
     }
 
     private fun normalizeRating(rating: Double): Double {
-        // Normalize rating from 1-5 scale to 0-1 scale
-        // 1.0 = score 0.0, 5.0 = score 1.0
+        // 평점을 1-5 범위에서 0-1 범위로 정규화
+        // 1.0 = 점수 0.0, 5.0 = 점수 1.0
         return max(0.0, min(1.0, (rating - 1.0) / 4.0))
     }
 
@@ -112,7 +112,7 @@ class MatchingScoreCalculator(
         val acceptanceScore = kotlin.math.max(0.0, kotlin.math.min(1.0, acceptanceRate))
         val completionScore = kotlin.math.max(0.0, kotlin.math.min(1.0, completionRate))
         
-        // Use the weights from properties or default values
+        // 속성에서 가중치를 사용하거나 기본값 사용
         val distanceWeight = matchingProperties.distanceWeight
         val ratingWeight = matchingProperties.ratingWeight
         val acceptanceWeight = matchingProperties.acceptanceWeight

@@ -46,7 +46,7 @@ class DlqManagementController(
             "errorClass: $errorClass, limit: $limit, page: $page" 
         }
         
-        // In a real implementation, this would query from persistent storage
+        // 실제 구현에서는 영구 저장소에서 쿼리할 예정
         val messages = listOf(
             DlqMessageDto(
                 id = "dlq-001",
@@ -83,7 +83,7 @@ class DlqManagementController(
     ): ApiResponse<DlqReplayResponse> {
         logger.info { "Replaying DLQ message: $messageId" }
         
-        // In a real implementation, fetch the message from storage
+        // 실제 구현에서는 저장소에서 메시지를 가져옴
         val dlqMessage = DlqMessage(
             originalTopic = "ride-requested",
             originalPartition = 0,
@@ -150,7 +150,7 @@ class DlqManagementController(
     fun getDlqStats(): ApiResponse<DlqStatsResponse> {
         logger.info { "Fetching DLQ statistics" }
         
-        // In a real implementation, aggregate from persistent storage
+        // 실제 구현에서는 영구 저장소에서 집계
         val stats = DlqStatsResponse(
             totalMessages = 42,
             messagesByTopic = mapOf(
@@ -185,7 +185,7 @@ class DlqManagementController(
     ) {
         logger.info { "Deleting poison message: $messageId" }
         
-        // In a real implementation, delete from persistent storage
+        // 실제 구현에서는 영구 저장소에서 삭제
     }
 }
 
