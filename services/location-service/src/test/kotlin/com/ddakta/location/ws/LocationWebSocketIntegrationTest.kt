@@ -43,7 +43,7 @@ class LocationWebSocketIntegrationTest {
     private lateinit var locationService: LocationService
 
     @Test
-    fun `webSocketHandshakeAndLocationMessageIsHandled`() {
+    fun `웹소켓_핸드쉐이크_및_위치_메시지_처리_테스트`() {
         // 1) JWT 생성 (subject=test-driver, 만료 1분 뒤)
         val secretKey = Keys.hmacShaKeyFor((jwtUtil as JwtUtil).secret.toByteArray())
         val token = Jwts.builder()

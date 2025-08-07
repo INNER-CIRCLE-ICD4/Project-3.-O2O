@@ -50,6 +50,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core:5.7.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
     testRuntimeOnly("com.h2database:h2")
+    testImplementation(kotlin("test"))
 }
 
 tasks.withType<Test> {

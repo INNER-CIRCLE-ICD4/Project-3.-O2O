@@ -4,6 +4,7 @@ import com.ddakta.location.dto.LocationUpdateDto
 import com.ddakta.location.domain.LocationUpdate
 import com.ddakta.location.exception.ForbiddenException
 import com.ddakta.location.service.LocationService
+import com.ddakta.utils.security.AuthenticationPrincipal
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.stereotype.Component
 import org.springframework.validation.BeanPropertyBindingResult
@@ -29,8 +30,12 @@ class LocationWebSocketHandler(
             session.close(CloseStatus.BAD_DATA.withReason("Invalid data"))
             return
         }
-        val driverId = session.attributes["driverId"] as? String
-            ?: throw ForbiddenException("Driver ID missing")
+
+        // 세션에 저장된 principal 정보 꺼내기
+        val principal = session.attributes["principal"] as? AuthenticationPrincipal
+            ?: throw ForbiddenException("WebSocket 연결에 사용자 정보가 없습니다")
+        val driverId = principal.userId.toString()
+
         val update = LocationUpdate(driverId, dto.latitude!!, dto.longitude!!, dto.timestamp!!)
         service.updateLocation(update)
     }
