@@ -50,5 +50,23 @@ class PaymentEventProvider(
         }
     }
 
+    // 취소 이벤트 발행
+    fun paymentCancelled(event: PaymentCancelledEvent): CompletableFuture<Void> {
+        try {
+            val message = objectMapper.writeValueAsString(event)
+            log.info("이벤트 발행 시작: $event")
+
+            return kafkaTemplate.send("payment-cancelled", message)
+                .thenRun {log.info("이벤트 발행 완료: $event")}
+                .exceptionally { throwable ->
+                    log.error("이벤트 발행 실패: $event", throwable)
+                    throw throwable
+                }
+        } catch (e: Exception) {
+            log.error("이벤트 직렬화 실패", e)
+            throw e
+        }
+    }
+
 }
 

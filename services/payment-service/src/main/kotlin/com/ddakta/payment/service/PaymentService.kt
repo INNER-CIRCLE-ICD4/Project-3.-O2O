@@ -2,6 +2,7 @@ package com.ddakta.payment.service
 
 import com.ddakta.payment.entity.Payment
 import com.ddakta.payment.event.DriveEndEvent
+import com.ddakta.payment.event.PaymentCancelledEvent
 import com.ddakta.payment.event.PaymentEventProvider
 import com.ddakta.payment.event.PaymentFailedEvent
 import com.ddakta.payment.event.PaymentRetryEvent
@@ -29,8 +30,7 @@ class PaymentService(
         val payment = paymentRepository.save(Payment.create(event))
 
         log.info("결제 요청 전송 ... 주문ID=${event.matchId}, 금액=${event.amount}")
-        val paymentId = pgService.processPayment(payment)
-        updatePaymentId(paymentId)
+        pgService.processPayment(payment)
     }
 
     // 결제 검증 후 재요청
@@ -74,6 +74,33 @@ class PaymentService(
         ))
     }
 
+    fun cancelPayment(paymentId: String) {
+        val payment = getPaymentOrThrow(paymentId)
+        log.info("결제 취소 요청. paymentId: $paymentId")
+
+        // 이미 취소되었는지 확인
+        require(!payment.isCancelled()) { "이미 취소된 결제입니다." }
+
+        // PG사에 취소 요청
+        val cancelled = pgService.cancelPayment(payment)
+
+        if (cancelled) {
+            payment.cancel()
+            paymentRepository.save(payment)
+            log.info("결제 취소 완료. paymentId: $paymentId")
+            // 이벤트 발행
+            paymentEventProvider.paymentCancelled(PaymentCancelledEvent(
+                matchId = payment.matchId,
+                userId = payment.userId.toString(),
+                reason = "사용자 요청"
+            ))
+        } else {
+            log.error("PG사 결제 취소 실패. paymentId: $paymentId")
+            // 예외를 발생시키거나 실패 처리 로직 추가
+            throw IllegalStateException("PG사 결제 취소에 실패했습니다.")
+        }
+    }
+
     @Transactional(readOnly = true)
     fun getPaymentOrThrow(paymentId: String): Payment {
         return paymentRepository.findByPaymentId(paymentId) ?: throw IllegalArgumentException("유효한 결제가 아닙니다.")
@@ -81,7 +108,7 @@ class PaymentService(
 
     @Transactional(readOnly = true)
     fun validatePayment(event: DriveEndEvent) {
-        require(event.amount <= 0) { "결제 금액은 0보다 커야 합니다" }
+        require(event.amount > 0) { "결제 금액은 0보다 커야 합니다" }
         paymentRepository.findByMatchId(event.matchId)?.run {
             throw IllegalStateException("이미 요청 완료된 건입니다.")
         }

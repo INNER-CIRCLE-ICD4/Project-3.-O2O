@@ -4,4 +4,5 @@ import com.ddakta.payment.entity.Payment
 
 interface PGService {
     fun processPayment(payment: Payment): String
+    fun cancelPayment(payment: Payment): Boolean
 }
