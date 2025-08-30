@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: payment-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payment_db
+    username: payment_id
+    password: payment_pwd
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: payment-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+
+ddakta:
+  user-client:
+    enabled: true
+  auth-service:
+    url: http://auth-service:8080
+  jwt:
+    secret: ${JWT_SECRET}
+#  docker:
+#    compose:
+#      lifecycle-management: start_only
+
+server:
+  port: 8080
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+logging:
+  level:
+    com.ddakta.payment: DEBUG
