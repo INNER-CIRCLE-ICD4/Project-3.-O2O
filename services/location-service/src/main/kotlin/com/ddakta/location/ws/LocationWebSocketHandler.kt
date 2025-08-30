@@ -1,42 +1,83 @@
 package com.ddakta.location.ws
 
-import com.ddakta.location.dto.LocationUpdateDto
-import com.ddakta.location.domain.LocationUpdate
-import com.ddakta.location.exception.ForbiddenException
 import com.ddakta.location.service.LocationService
-import com.ddakta.utils.security.AuthenticationPrincipal
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.uber.h3core.H3Core
+import mu.KotlinLogging
 import org.springframework.stereotype.Component
-import org.springframework.validation.BeanPropertyBindingResult
-import org.springframework.validation.ValidationUtils
-import org.springframework.validation.Validator
 import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
+import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class LocationWebSocketHandler(
-    private val service: LocationService,
-    private val validator: Validator
+    private val locationService: LocationService,
+    private val objectMapper: ObjectMapper
 ) : TextWebSocketHandler() {
-    private val mapper = jacksonObjectMapper()
+
+    private val logger = KotlinLogging.logger {}
+    private val sessions = ConcurrentHashMap<String, WebSocketSession>()
+    private val h3 = H3Core.newInstance()
+
+    override fun afterConnectionEstablished(session: WebSocketSession) {
+        val driverId = session.attributes["driverId"] as? String
+        if (driverId == null) {
+            logger.warn { "WebSocket session established without driverId. Closing session." }
+            session.close(CloseStatus.BAD_DATA)
+            return
+        }
+        sessions[driverId] = session
+        logger.info { "WebSocket session established for driver: $driverId" }
+        // 드라이버 상태를 ONLINE으로 업데이트 (Redis에 저장)
+        locationService.updateDriverStatus(driverId, "ONLINE")
+    }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
-        val dto = mapper.readValue(message.payload, LocationUpdateDto::class.java)
-        val errors = BeanPropertyBindingResult(dto, dto::class.java.name)
-        ValidationUtils.invokeValidator(validator, dto, errors)
-        if (errors.hasErrors()) {
-            session.close(CloseStatus.BAD_DATA.withReason("Invalid data"))
+        val driverId = session.attributes["driverId"] as? String
+        if (driverId == null) {
+            logger.warn { "Received message from session without driverId. Closing session." }
+            session.close(CloseStatus.BAD_DATA)
             return
         }
 
-        // 세션에 저장된 principal 정보 꺼내기
-        val principal = session.attributes["principal"] as? AuthenticationPrincipal
-            ?: throw ForbiddenException("WebSocket 연결에 사용자 정보가 없습니다")
-        val driverId = principal.userId.toString()
+        try {
+            val locationData = objectMapper.readTree(message.payload)
+            val latitude = locationData.get("latitude").asDouble()
+            val longitude = locationData.get("longitude").asDouble()
+            val timestamp = locationData.get("timestamp").asLong()
 
-        val update = LocationUpdate(driverId, dto.latitude!!, dto.longitude!!, dto.timestamp!!)
-        service.updateLocation(update)
+            // H3 인덱스 계산
+            val h3Index = h3.geoToH3Address(latitude, longitude, 9) // 해상도 9
+
+            locationService.updateLocation(
+                driverId = driverId,
+                latitude = latitude,
+                longitude = longitude,
+                h3Index = h3Index,
+                timestamp = timestamp
+            )
+            logger.debug { "Location updated for driver $driverId: $latitude, $longitude (H3: $h3Index)" }
+
+        } catch (e: Exception) {
+            logger.error(e) { "Error processing location update for driver $driverId: ${e.message}" }
+            session.sendMessage(TextMessage("Error processing location update"))
+        }
+    }
+
+    override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
+        val driverId = session.attributes["driverId"] as? String
+        if (driverId != null) {
+            sessions.remove(driverId)
+            logger.info { "WebSocket session closed for driver: $driverId with status: $status" }
+            // 드라이버 상태를 OFFLINE으로 업데이트 (Redis에 저장)
+            locationService.updateDriverStatus(driverId, "OFFLINE")
+        }
+    }
+
+    override fun handleTransportError(session: WebSocketSession, exception: Throwable) {
+        val driverId = session.attributes["driverId"] as? String
+        logger.error(exception) { "WebSocket transport error for driver $driverId: ${exception.message}" }
     }
 }

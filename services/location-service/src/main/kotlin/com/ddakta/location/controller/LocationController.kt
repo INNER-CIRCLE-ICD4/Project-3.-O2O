@@ -1,49 +1,31 @@
 package com.ddakta.location.controller
 
-import com.ddakta.location.domain.LocationUpdate
-import com.ddakta.location.dto.LocationUpdateDto
 import com.ddakta.location.dto.NearbyDriverDto
 import com.ddakta.location.service.LocationService
-import com.ddakta.utils.security.AuthenticationPrincipal
-import com.ddakta.utils.security.CurrentUser
 import org.springframework.http.ResponseEntity
-import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/locations")
+@RequestMapping("/api/v1/locations")
 class LocationController(
     private val locationService: LocationService
 ) {
-    // (1) 위치 업데이트: OAuth로 인증된 드라이버만
-    @PostMapping
-    fun updateLocation(
-        @CurrentUser principal: AuthenticationPrincipal,
-        @Validated @RequestBody dto: LocationUpdateDto
-    ): ResponseEntity<Void> {
-        val update = LocationUpdate(
-            driverId  = principal.userId.toString(),
-            latitude  = dto.latitude!!,
-            longitude = dto.longitude!!,
-            timestamp = dto.timestamp!!
-        )
-        locationService.updateLocation(update)
-        return ResponseEntity.ok().build()
-    }
 
-    // (2) 주변 드라이버 검색
-    @GetMapping("/nearby")
-    fun getNearbyDrivers(
-        @RequestParam latitude: Double,
-        @RequestParam longitude: Double,
-        @RequestParam radius: Double = 2000.0
+    /**
+     * H3 인덱스 기반으로 주변 드라이버를 검색하는 API
+     * @param h3Index 중심 H3 인덱스
+     * @param kRingSize 검색할 인접 지역의 범위 (k-ring 크기)
+     * @return 주변 드라이버 리스트
+     */
+    @GetMapping("/h3-drivers")
+    fun getDriversInH3Cells(
+        @RequestParam h3Index: String,
+        @RequestParam(defaultValue = "1") kRingSize: Int
     ): ResponseEntity<List<NearbyDriverDto>> {
-        val nearby = locationService.findNearbyDrivers(latitude, longitude, radius)
-        return ResponseEntity.ok(nearby)
+        val nearbyDrivers = locationService.findDriversInH3Cells(h3Index, kRingSize)
+        return ResponseEntity.ok(nearbyDrivers)
     }
 }

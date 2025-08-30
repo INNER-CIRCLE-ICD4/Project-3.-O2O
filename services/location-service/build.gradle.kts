@@ -51,6 +51,9 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
     testRuntimeOnly("com.h2database:h2")
     testImplementation(kotlin("test"))
+
+    // H3 library for geospatial indexing
+    implementation("com.uber:h3:4.1.1")
 }
 
 tasks.withType<Test> {
