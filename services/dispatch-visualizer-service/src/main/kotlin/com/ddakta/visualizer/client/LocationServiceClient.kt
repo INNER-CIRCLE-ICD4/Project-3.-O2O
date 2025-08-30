@@ -15,7 +15,7 @@ import javax.annotation.PreDestroy
 @Component
 class LocationServiceClient(
     private val objectMapper: ObjectMapper,
-    @Value("\${location.service.ws.url}") private val locationServiceWsUrl: String
+    @Value("${location.service.ws.url}") private val locationServiceWsUrl: String
 ) : TextWebSocketHandler() {
 
     private val logger = KotlinLogging.logger {}
@@ -72,3 +72,4 @@ class LocationServiceClient(
         }
     }
 }
+

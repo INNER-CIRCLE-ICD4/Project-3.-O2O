@@ -7,8 +7,24 @@ import org.springframework.web.socket.client.WebSocketConnectionManager
 import org.springframework.web.socket.client.standard.StandardWebSocketClient
 import org.springframework.web.socket.handler.TextWebSocketHandler
 
+package com.ddakta.visualizer.config
+
+import com.ddakta.visualizer.ws.FrontendNotificationWebSocketHandler
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.web.client.RestTemplate
+import org.springframework.web.socket.client.WebSocketConnectionManager
+import org.springframework.web.socket.client.standard.StandardWebSocketClient
+import org.springframework.web.socket.handler.TextWebSocketHandler
+import org.springframework.web.socket.config.annotation.EnableWebSocket
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
+
 @Configuration
-class WebSocketConfig {
+@EnableWebSocket
+class WebSocketConfig(
+    private val frontendNotificationWebSocketHandler: FrontendNotificationWebSocketHandler
+) : WebSocketConfigurer {
 
     // WebSocket 클라이언트 (matching-service의 /ws/rides 엔드포인트 연결용)
     @Bean
@@ -32,19 +48,18 @@ class WebSocketConfig {
         return connectionManager
     }
 
-    // matching-service로부터 메시지를 받을 핸들러 (나중에 구현)
-    // @Bean
-    // fun matchingServiceWebSocketHandler(): TextWebSocketHandler {
-    //     return object : TextWebSocketHandler() {
-    //         override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
-    //             // matching-service로부터 받은 메시지 처리 로직
-    //             println("Received from matching-service: ${message.payload}")
-    //         }
-    //     }
-    // }
+    @Bean
+    fun matchingServiceWebSocketHandler(): TextWebSocketHandler {
+        return MatchingServiceWebSocketHandler()
+    }
 
     @Bean
     fun restTemplate(): RestTemplate {
         return RestTemplate()
+    }
+
+    override fun registerWebSocketHandlers(registry: WebSocketHandlerRegistry) {
+        registry.addHandler(frontendNotificationWebSocketHandler, "/ws/notifications")
+            .setAllowedOrigins("*") // 개발 환경에서 모든 Origin 허용
     }
 }
