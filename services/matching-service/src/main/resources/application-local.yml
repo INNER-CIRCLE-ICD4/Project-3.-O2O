@@ -1,12 +1,13 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/ddakta_matching_local
-    username: ddakta
-    password: ddakta123
-  
+    url: jdbc:postgresql://localhost:5432/ddakta_db?currentSchema=matching
+    username: ddakta_user
+    password: ddakta_password
+    driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
@@ -14,14 +15,14 @@ spring:
 
   kafka:
     bootstrap-servers: localhost:9092
-  
+
   redis:
     host: localhost
     port: 6379
 
 eureka:
   client:
-    enabled: false
+    enabled: true
 
 feign:
   client:
@@ -29,13 +30,13 @@ feign:
       default:
         loggerLevel: FULL
 
-ddakta:
-  auth-service:
-    url: http://localhost:8081
-  location-service:
-    url: http://localhost:8083
-  payment-service:
-    url: http://localhost:8084
+#ddakta:
+#  auth-service:
+#    url: http://localhost:8081
+#  location-service:
+#    url: http://localhost:8083
+#  payment-service:
+#    url: http://localhost:8084
 
 logging:
   level:

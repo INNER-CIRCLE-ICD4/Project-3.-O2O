@@ -3,9 +3,9 @@ spring:
     name: payment-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/payment_db
-    username: payment_id
-    password: payment_pwd
+    url: jdbc:postgresql://localhost:5432/ddakta_db?currentSchema=payment
+    username: ddakta_user
+    password: ddakta_password
     driver-class-name: org.postgresql.Driver
 
   jpa:

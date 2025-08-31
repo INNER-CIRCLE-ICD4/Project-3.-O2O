@@ -4,7 +4,7 @@ services:
   # ================================
   # Infrastructure Services Only
   # ================================
-  
+
   postgres:
     image: postgres:15-alpine
     container_name: ddakta-postgres
@@ -16,6 +16,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ddakta_user -d ddakta_db"]
       interval: 10s
@@ -27,11 +28,9 @@ services:
   redis:
     image: redis:7-alpine
     container_name: ddakta-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports: ["6379:6379"]
+    volumes: [ "./redis-config:/usr/local/etc/redis" ]
+    command: redis-server /usr/local/etc/redis/redis.conf
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
