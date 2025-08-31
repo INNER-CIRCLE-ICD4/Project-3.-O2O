@@ -1,0 +1,3 @@
+CREATE SCHEMA auth;
+CREATE SCHEMA payment;
+CREATE SCHEMA matching;

@@ -1,0 +1,38 @@
+-- -- 초기 데이터 삽입
+--
+-- -- 관리자 사용자 생성
+-- INSERT INTO users (
+--     email,
+--     username,
+--     user_role,
+--     user_status,
+--     provider
+-- ) VALUES (
+--              'admin@ddakta.com',
+--              'admin',
+--              'ADMIN',
+--              'ACTIVE',
+--              'LOCAL'
+--          );
+--
+-- -- 테스트 사용자 생성
+-- INSERT INTO users (
+--     email,
+--     username,
+--     user_role,
+--     user_status,
+--     provider
+-- ) VALUES (
+--              'test@ddakta.com',
+--              'testuser',
+--              'USER',
+--              'ACTIVE',
+--              'LOCAL'
+--          );
+--
+-- -- 초기 설정을 위한 시퀀스 재설정
+-- SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
+-- SELECT setval('payments_id_seq', 1, false);
+-- SELECT setval('payment_histories_id_seq', 1, false);
+-- SELECT setval('refunds_id_seq', 1, false);
+-- SELECT setval('webhook_logs_id_seq', 1, false);
