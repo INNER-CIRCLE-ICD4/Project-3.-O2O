@@ -1,6 +1,5 @@
 package com.ddakta.matching.controller
 
-import com.ddakta.matching.domain.enum.CancellationReason
 import com.ddakta.matching.dto.request.RideCancelRequest
 import com.ddakta.matching.dto.request.RideRatingRequest
 import com.ddakta.matching.dto.request.RideRequestDto
@@ -10,18 +9,18 @@ import com.ddakta.matching.service.RideService
 import com.ddakta.utils.response.ApiResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
-import io.swagger.v3.oas.annotations.tags.Tag
-import io.swagger.v3.oas.annotations.responses.ApiResponse as OpenApiResponse
-import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.ExampleObject
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 import java.util.*
+import io.swagger.v3.oas.annotations.responses.ApiResponse as OpenApiResponse
 
 @Tag(name = "Ride Management", description = "운행 관리 API - 승객의 운행 요청 생성, 조회, 취소 등을 담당합니다")
 @RestController
@@ -30,13 +29,13 @@ import java.util.*
 class RideController(
     private val rideService: RideService
 ) {
-    
+
     private val logger = KotlinLogging.logger {}
-    
+
     @Operation(
         summary = "운행 요청",
-        description = """새로운 운행을 요청합니다. 
-        운행 요청 시 승객의 위치, 목적지 정보를 포함해야 하며, 
+        description = """새로운 운행을 요청합니다.
+        운행 요청 시 승객의 위치, 목적지 정보를 포함해야 하며,
         시스템은 자동으로 주변 드라이버를 검색하여 매칭을 시도합니다."""
     )
     @ApiResponses(
@@ -152,15 +151,15 @@ class RideController(
         @Valid @RequestBody request: RideRequestDto
     ): ApiResponse<RideResponseDto> {
         logger.info { "Creating ride request for passenger: ${request.passengerId}" }
-        
+
         val ride = rideService.createRide(request)
-        
+
         return ApiResponse.success(
             data = ride,
             message = "운행 요청이 성공적으로 생성되었습니다"
         )
     }
-    
+
     @Operation(
         summary = "운행 조회",
         description = "운행 ID로 운행 정보를 조회합니다. 운행의 현재 상태, 드라이버 정보, 예상 도착 시간 등을 확인할 수 있습니다."
@@ -195,12 +194,12 @@ class RideController(
         @PathVariable rideId: UUID
     ): ApiResponse<RideResponseDto> {
         logger.debug { "Getting ride: $rideId" }
-        
+
         val ride = rideService.getRide(rideId)
-        
+
         return ApiResponse.success(data = ride)
     }
-    
+
     @Operation(summary = "운행 상태 업데이트", description = "운행 상태를 업데이트합니다")
     @PutMapping("/{rideId}/status")
     fun updateRideStatus(
@@ -211,15 +210,15 @@ class RideController(
         @RequestHeader("X-Actor-Id") actorId: UUID
     ): ApiResponse<RideResponseDto> {
         logger.info { "Updating ride $rideId status with event: ${statusUpdate.event}" }
-        
+
         val ride = rideService.updateRideStatus(rideId, statusUpdate, actorId)
-        
+
         return ApiResponse.success(
             data = ride,
             message = "운행 상태가 업데이트되었습니다"
         )
     }
-    
+
     @Operation(
         summary = "운행 취소",
         description = "운행을 취소합니다. 취소 사유를 포함해야 하며, 상태에 따라 취소 수수료가 부과될 수 있습니다."
@@ -288,15 +287,15 @@ class RideController(
         @RequestHeader("X-User-Id") userId: UUID
     ): ApiResponse<RideResponseDto> {
         logger.info { "Cancelling ride $rideId by user $userId with reason: ${cancelRequest.reason}" }
-        
+
         val ride = rideService.cancelRide(rideId, cancelRequest.reason, userId)
-        
+
         return ApiResponse.success(
             data = ride,
             message = "운행이 취소되었습니다"
         )
     }
-    
+
     @Operation(
         summary = "승객의 활성 운행 조회",
         description = "승객의 현재 활성 운행을 조회합니다. 활성 운행은 REQUESTED, MATCHED, DRIVER_ASSIGNED, IN_PROGRESS 상태의 운행을 의미합니다."
@@ -321,9 +320,9 @@ class RideController(
         @PathVariable passengerId: UUID
     ): ApiResponse<RideResponseDto?> {
         logger.debug { "Getting active ride for passenger: $passengerId" }
-        
+
         val ride = rideService.getActiveRideForPassenger(passengerId)
-        
+
         return if (ride != null) {
             ApiResponse.success(data = ride)
         } else {
@@ -333,7 +332,7 @@ class RideController(
             )
         }
     }
-    
+
     @Operation(summary = "드라이버의 활성 운행 조회", description = "드라이버의 현재 활성 운행을 조회합니다")
     @GetMapping("/drivers/{driverId}/active")
     fun getActiveRideForDriver(
@@ -341,9 +340,9 @@ class RideController(
         @PathVariable driverId: UUID
     ): ApiResponse<RideResponseDto?> {
         logger.debug { "Getting active ride for driver: $driverId" }
-        
+
         val ride = rideService.getActiveRideForDriver(driverId)
-        
+
         return if (ride != null) {
             ApiResponse.success(data = ride)
         } else {
@@ -353,7 +352,7 @@ class RideController(
             )
         }
     }
-    
+
     @Operation(summary = "운행 이력 조회", description = "사용자의 운행 이력을 조회합니다")
     @GetMapping("/history")
     fun getRideHistory(
@@ -367,15 +366,15 @@ class RideController(
         @RequestParam(defaultValue = "0") offset: Int
     ): ApiResponse<List<RideResponseDto>> {
         logger.debug { "Getting ride history for user: $userId (isDriver: $isDriver)" }
-        
+
         val history = rideService.getRideHistory(userId, isDriver, limit, offset)
-        
+
         return ApiResponse.success(
             data = history,
             message = "${history.size}개의 운행 이력을 조회했습니다"
         )
     }
-    
+
     @Operation(summary = "운행 평가", description = "완료된 운행에 대한 평가를 등록합니다")
     @PostMapping("/{rideId}/ratings")
     fun rateRide(
@@ -386,20 +385,20 @@ class RideController(
         @RequestHeader("X-User-Id") raterId: UUID
     ): ApiResponse<RideResponseDto> {
         logger.info { "Rating ride $rideId with ${ratingRequest.rating} stars" }
-        
+
         val ride = rideService.updateRideRating(
             rideId = rideId,
             rating = ratingRequest.rating,
             isPassengerRating = ratingRequest.isPassengerRating,
             raterId = raterId
         )
-        
+
         return ApiResponse.success(
             data = ride,
             message = "평가가 등록되었습니다"
         )
     }
-    
+
     @Operation(summary = "운행 완료", description = "운행을 완료 처리합니다")
     @PostMapping("/{rideId}/complete")
     fun completeRide(
@@ -413,9 +412,9 @@ class RideController(
         @RequestHeader("X-Driver-Id") driverId: UUID
     ): ApiResponse<RideResponseDto> {
         logger.info { "Completing ride $rideId - distance: ${distance}m, duration: ${duration}s" }
-        
+
         val ride = rideService.completeRide(rideId, distance, duration, driverId)
-        
+
         return ApiResponse.success(
             data = ride,
             message = "운행이 완료되었습니다"

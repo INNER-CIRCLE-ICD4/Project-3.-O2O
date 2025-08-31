@@ -23,15 +23,15 @@ class DriverLocationConsumer(
     private val redisTemplate: RedisTemplate<String, String>,
     private val messagingTemplate: SimpMessagingTemplate
 ) {
-    
+
     private val logger = KotlinLogging.logger {}
-    
+
     companion object {
         const val DRIVER_LOCATION_KEY = "driver:location:"
         const val DRIVER_STATUS_KEY = "driver:status:"
         const val LOCATION_TTL_MINUTES = 5L
     }
-    
+
     @KafkaListener(
         topics = ["driver-location-updated"],
         groupId = "matching-service-location",
@@ -43,17 +43,17 @@ class DriverLocationConsumer(
         @Header(KafkaHeaders.RECEIVED_TIMESTAMP) timestamp: Long,
         acknowledgment: Acknowledgment
     ) {
-        logger.debug { 
+        logger.debug {
             "Driver ${event.driverId} location update: ${event.latitude}, ${event.longitude}"
         }
-        
+
         try {
             // Redis에 드라이버 위치 캐시
             cacheDriverLocation(event)
-            
+
             // 드라이버가 활성 운행을 가지고 있는지 확인
             val activeRide = rideService.getActiveRideForDriver(event.driverId)
-            
+
             if (activeRide != null) {
                 // WebSocket을 통해 운행 참가자에게 위치 업데이트 브로드캐스트
                 val locationUpdate = RideLocationUpdateDto(
@@ -66,25 +66,25 @@ class DriverLocationConsumer(
                     accuracy = event.accuracy,
                     timestamp = event.timestamp
                 )
-                
+
                 messagingTemplate.convertAndSend(
                     "/topic/ride/${activeRide.id}/location",
                     locationUpdate
                 )
-                
-                logger.debug { 
+
+                logger.debug {
                     "Broadcasted location update for ride ${activeRide.id}"
                 }
             }
-            
+
             acknowledgment.acknowledge()
-            
+
         } catch (e: Exception) {
             logger.error(e) { "Error processing location update for driver ${event.driverId}" }
             throw e
         }
     }
-    
+
     @KafkaListener(
         topics = ["driver-status-changed"],
         groupId = "matching-service-location",
@@ -94,10 +94,10 @@ class DriverLocationConsumer(
         @Payload event: DriverStatusChangedEvent,
         acknowledgment: Acknowledgment
     ) {
-        logger.info { 
+        logger.info {
             "Driver ${event.driverId} status changed: ${event.previousStatus} -> ${event.newStatus}"
         }
-        
+
         try {
             // 캐시에서 드라이버 상태 업데이트
             val key = "$DRIVER_STATUS_KEY${event.driverId}"
@@ -107,7 +107,7 @@ class DriverLocationConsumer(
                 LOCATION_TTL_MINUTES,
                 TimeUnit.MINUTES
             )
-            
+
             // 상태별 로직 처리
             when (event.newStatus) {
                 "OFFLINE" -> {
@@ -126,15 +126,15 @@ class DriverLocationConsumer(
                     removeDriverFromAvailablePool(event.driverId)
                 }
             }
-            
+
             acknowledgment.acknowledge()
-            
+
         } catch (e: Exception) {
             logger.error(e) { "Error processing status change for driver ${event.driverId}" }
             throw e
         }
     }
-    
+
     @KafkaListener(
         topics = ["driver-availability-changed"],
         groupId = "matching-service-location",
@@ -144,10 +144,10 @@ class DriverLocationConsumer(
         @Payload event: DriverAvailabilityChangedEvent,
         acknowledgment: Acknowledgment
     ) {
-        logger.info { 
+        logger.info {
             "Driver ${event.driverId} availability changed: ${event.isAvailable}"
         }
-        
+
         try {
             if (event.isAvailable) {
                 event.h3Index?.let { h3Index ->
@@ -156,26 +156,26 @@ class DriverLocationConsumer(
             } else {
                 removeDriverFromAvailablePool(event.driverId)
             }
-            
+
             acknowledgment.acknowledge()
-            
+
         } catch (e: Exception) {
             logger.error(e) { "Error processing availability change for driver ${event.driverId}" }
             throw e
         }
     }
-    
+
     private fun cacheDriverLocation(event: DriverLocationUpdatedEvent) {
         val locationData = "${event.latitude},${event.longitude},${event.h3Index}"
         val key = "$DRIVER_LOCATION_KEY${event.driverId}"
-        
+
         redisTemplate.opsForValue().set(
             key,
             locationData,
             LOCATION_TTL_MINUTES,
             TimeUnit.MINUTES
         )
-        
+
         // H3 인덱스 기반 위치 추적도 업데이트
         if (event.isOnline) {
             val h3Key = "drivers:h3:${event.h3Index}"
@@ -183,26 +183,26 @@ class DriverLocationConsumer(
             redisTemplate.expire(h3Key, LOCATION_TTL_MINUTES, TimeUnit.MINUTES)
         }
     }
-    
+
     private fun addDriverToAvailablePool(driverId: UUID, h3Index: String?) {
         if (h3Index != null) {
             val availableKey = "drivers:available:$h3Index"
             redisTemplate.opsForSet().add(availableKey, driverId.toString())
             redisTemplate.expire(availableKey, LOCATION_TTL_MINUTES, TimeUnit.MINUTES)
-            
+
             logger.debug { "Added driver $driverId to available pool in $h3Index" }
         }
     }
-    
+
     private fun removeDriverFromAvailablePool(driverId: UUID) {
         // 모든 H3 인덱스에서 제거 (어느 것인지 모를 수 있음)
         val pattern = "drivers:available:*"
         val keys = redisTemplate.keys(pattern)
-        
+
         keys.forEach { key ->
             redisTemplate.opsForSet().remove(key, driverId.toString())
         }
-        
+
         logger.debug { "Removed driver $driverId from available pools" }
     }
 }

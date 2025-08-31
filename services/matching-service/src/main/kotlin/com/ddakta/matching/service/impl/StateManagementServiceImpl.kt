@@ -8,6 +8,7 @@ import com.ddakta.matching.service.StateManagementService
 import mu.KotlinLogging
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.statemachine.StateMachine
+import org.springframework.statemachine.config.EnableStateMachineFactory
 import org.springframework.statemachine.config.StateMachineFactory
 import org.springframework.statemachine.persist.StateMachinePersister
 import org.springframework.statemachine.support.DefaultStateMachineContext
@@ -108,7 +109,7 @@ class StateManagementServiceImpl(
                 RideEvent.MATCHING_TIMEOUT
             )
             RideStatus.MATCHED -> event in listOf(
-                RideEvent.ASSIGN_DRIVER,
+                RideEvent.DRIVER_ACCEPTED,
                 RideEvent.RIDE_CANCELLED,
                 RideEvent.DRIVER_TIMEOUT
             )
@@ -121,7 +122,7 @@ class StateManagementServiceImpl(
                 RideEvent.RIDE_CANCELLED
             )
             RideStatus.ARRIVED_AT_PICKUP -> event in listOf(
-                RideEvent.START_TRIP,
+                RideEvent.TRIP_STARTED,
                 RideEvent.RIDE_CANCELLED
             )
             RideStatus.ON_TRIP -> event in listOf(
@@ -172,14 +173,11 @@ class StateManagementServiceImpl(
     ) {
         stateMachine.stop()
 
-        // TODO: 임시 수정 - DefaultStateMachineContext 생성자 파라미터 조정
         val context = DefaultStateMachineContext<RideStatus, RideEvent>(
             status,
             null,
-            mutableMapOf<String, Any>(),
             null,
-            mutableMapOf<RideStatus, RideStatus>(),
-            rideId.toString()
+            null
         )
 
         stateMachine.stateMachineAccessor.doWithAllRegions { accessor ->

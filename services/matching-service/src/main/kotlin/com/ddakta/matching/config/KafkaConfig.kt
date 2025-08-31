@@ -16,17 +16,20 @@ import org.springframework.kafka.listener.DeadLetterPublishingRecoverer
 import org.springframework.kafka.listener.DefaultErrorHandler
 import org.springframework.util.backoff.FixedBackOff
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Value
 
 @Configuration
 @EnableKafka
-class KafkaConfig {
-    
+class KafkaConfig(
+    @Value("\${spring.kafka.bootstrap-servers}") private val bootstrapServers: String
+) {
+
     private val logger = KotlinLogging.logger {}
-    
+
     @Bean
     fun producerFactory(): ProducerFactory<String, Any> {
         val configs = mapOf(
-            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to "kafka:9092",
+            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
             ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to JsonSerializer::class.java,
             ProducerConfig.ACKS_CONFIG to "all",
@@ -47,9 +50,9 @@ class KafkaConfig {
     fun consumerFactory(): ConsumerFactory<String, Any> {
         val deserializer = JsonDeserializer<Any>()
         deserializer.addTrustedPackages("com.ddakta.*")
-        
+
         val configs = mapOf(
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to "kafka:9092",
+            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
             ConsumerConfig.GROUP_ID_CONFIG to "matching-service",
             ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to deserializer,
@@ -57,7 +60,7 @@ class KafkaConfig {
             ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to false,
             ConsumerConfig.MAX_POLL_RECORDS_CONFIG to 500
         )
-        
+
         return DefaultKafkaConsumerFactory(configs, StringDeserializer(), deserializer)
     }
 
@@ -70,12 +73,12 @@ class KafkaConfig {
         factory.setCommonErrorHandler(errorHandler())
         return factory
     }
-    
+
     @Bean
     fun errorHandler(): DefaultErrorHandler {
         // Configure retry with backoff: 3 attempts, 1 second interval
         val backOff = FixedBackOff(1000L, 3)
-        
+
         // Dead letter publishing recoverer for failed messages
         val recoverer = DeadLetterPublishingRecoverer(kafkaTemplate()) { record, _ ->
             logger.error { "Sending message to DLQ: ${record.topic()}.dlq" }
@@ -83,7 +86,7 @@ class KafkaConfig {
             // Return TopicPartition for DLQ
             org.apache.kafka.common.TopicPartition(record.topic() + ".dlq", record.partition())
         }
-        
+
         return DefaultErrorHandler(recoverer, backOff).apply {
             // Add specific exceptions that should not be retried
             addNotRetryableExceptions(

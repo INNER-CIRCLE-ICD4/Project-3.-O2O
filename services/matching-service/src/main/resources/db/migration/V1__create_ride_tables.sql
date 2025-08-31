@@ -45,12 +45,21 @@ CREATE INDEX idx_rides_requested_at ON rides(requested_at);
 CREATE INDEX idx_rides_status_requested_at ON rides(status, requested_at);
 
 -- Partial indexes for active rides
+-- CREATE INDEX idx_rides_active_by_passenger ON rides(passenger_id, status)
+--     WHERE status IN ('REQUESTED', 'MATCHED', 'DRIVER_ASSIGNED', 'EN_ROUTE_TO_PICKUP', 'ARRIVED_AT_PICKUP', 'ON_TRIP');
+--
+-- CREATE INDEX idx_rides_active_by_driver ON rides(driver_id, status)
+--     WHERE status IN ('DRIVER_ASSIGNED', 'EN_ROUTE_TO_PICKUP', 'ARRIVED_AT_PICKUP', 'ON_TRIP');
+-- -- ... existing code ...
+
+-- Partial indexes for active rides
 CREATE INDEX idx_rides_active_by_passenger ON rides(passenger_id, status)
-    WHERE status IN ('REQUESTED', 'MATCHED', 'DRIVER_ASSIGNED', 'EN_ROUTE_TO_PICKUP', 'ARRIVED_AT_PICKUP', 'ON_TRIP');
+    WHERE status = 'REQUESTED' OR status = 'MATCHED' OR status = 'DRIVER_ASSIGNED' OR status = 'EN_ROUTE_TO_PICKUP' OR status = 'ARRIVED_AT_PICKUP' OR status = 'ON_TRIP';
 
 CREATE INDEX idx_rides_active_by_driver ON rides(driver_id, status)
-    WHERE status IN ('DRIVER_ASSIGNED', 'EN_ROUTE_TO_PICKUP', 'ARRIVED_AT_PICKUP', 'ON_TRIP');
+    WHERE status = 'DRIVER_ASSIGNED' OR status = 'EN_ROUTE_TO_PICKUP' OR status = 'ARRIVED_AT_PICKUP' OR status = 'ON_TRIP';
 
+-- ... existing code ...
 -- Ride state transitions table
 CREATE TABLE ride_state_transitions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
