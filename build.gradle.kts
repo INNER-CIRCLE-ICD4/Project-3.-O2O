@@ -27,14 +27,14 @@ allprojects {
 subprojects {
     apply(plugin = "kotlin")
     apply(plugin = "io.spring.dependency-management")
-    
+
     configure<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension> {
         imports {
             mavenBom("org.springframework.boot:spring-boot-dependencies:3.2.0")
             mavenBom("org.springframework.cloud:spring-cloud-dependencies:2023.0.0")
         }
     }
-    
+
     tasks.withType<KotlinCompile> {
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict")
@@ -50,7 +50,7 @@ subprojects {
     tasks.withType<Test> {
         useJUnitPlatform()
     }
-    
+
     // Enable jar task for all modules
     tasks.withType<Jar> {
         enabled = true
