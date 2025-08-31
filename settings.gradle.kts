@@ -1,15 +1,17 @@
 rootProject.name = "ddak-ta"
 
 include(
-    "services:gateway",
+    "services:api-gateway",
     "services:auth-service",
     "services:matching-service",
     "services:location-service",
     "services:payment-service",
     "services:notification-service",
+    "services:discovery-service",
     "common:domain",
     "common:events",
     "common:utils",
     "common:user-client",
-    "common:mock-auth"
+    "common:mock-auth",
+    "dispatch-visualizer-service"
 )
