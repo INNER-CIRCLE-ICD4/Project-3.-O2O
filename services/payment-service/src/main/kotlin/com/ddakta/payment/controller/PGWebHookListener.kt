@@ -20,7 +20,7 @@ class PGWebHookListener(
         log.info("Payment Webhook received: {}", pgData)
 
         // 멱등성 체크: 동일한 웹훅을 중복 처리하지 않도록 방지
-        val webhookKey = "webhook:processed:${pgData.data.transactionId ?: pgData.data.cancellationId}"
+        val webhookKey = "webhook:processed:${pgData.data.transactionId}"
         val isNew = redisTemplate.opsForValue().setIfAbsent(webhookKey, "1", 1, TimeUnit.DAYS)
 
         if (isNew == false) {

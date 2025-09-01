@@ -33,7 +33,7 @@ class RedisGeoLocationRepository(
         oldH3Index: String?
     ) {
         val ops = redisTemplate.opsForGeo()
-        val hashOps = redisTemplate.opsForHash()
+        val hashOps = redisTemplate.opsForHash<String, String>()
         val setOps = redisTemplate.opsForSet()
 
         // 1. Geo Set 업데이트 (반경 검색용)
@@ -72,7 +72,7 @@ class RedisGeoLocationRepository(
      * @return 위도, 경도, H3 인덱스를 포함하는 Map
      */
     fun getDriverLocation(driverId: String): Map<Any, Any>? {
-        return redisTemplate.opsForHash().entries(DRIVER_LOCATION_HASH_KEY + driverId)
+        return redisTemplate.opsForHash<Any, Any>().entries(DRIVER_LOCATION_HASH_KEY + driverId)
     }
 
     /**
