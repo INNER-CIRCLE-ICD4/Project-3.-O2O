@@ -15,55 +15,39 @@ class PaymentEventProvider(
     private val log = LoggerFactory.getLogger(javaClass)
 
     // 매칭서비스 && 푸쉬서비스에 결제 실패를 알린다.
-    fun paymentFailed(event: PaymentFailedEvent): CompletableFuture<Void> {
+    fun paymentFailed(event: PaymentFailedEvent) {
         try {
             val message = objectMapper.writeValueAsString(event)
             log.info("이벤트 발행 시작: $event")
 
-            return kafkaTemplate.send("payment-fail", message)
-                .thenRun {log.info("이벤트 발행 완료: $event")}
-                .exceptionally { throwable ->
-                    log.error("이벤트 발행 실패: $event", throwable)
-                    throw throwable
-                }
+            kafkaTemplate.send("payment-fail", message)
         } catch (e: Exception) {
-            log.error("이벤트 직렬화 실패", e)
+            log.error("결제실패 이벤트 처리 중 오류 발생", e)
             throw e
         }
     }
 
     // 성공 이벤트 발행
-    fun paymentSuccess(event: PaymentSuccessEvent): CompletableFuture<Void> {
+    fun paymentSuccess(event: PaymentSuccessEvent) {
         try {
             val message = objectMapper.writeValueAsString(event)
             log.info("이벤트 발행 시작: $event")
-
-            return kafkaTemplate.send("payment-success", message)
-                .thenRun {log.info("이벤트 발행 완료: $event")}
-                .exceptionally { throwable ->
-                    log.error("이벤트 발행 실패: $event", throwable)
-                    throw throwable
-                }
+            kafkaTemplate.send("payment-success", message)
         } catch (e: Exception) {
-            log.error("이벤트 직렬화 실패", e)
+            log.error("결제성공 이벤트 처리 중 오류 발생", e)
             throw e
         }
     }
 
     // 취소 이벤트 발행
-    fun paymentCancelled(event: PaymentCancelledEvent): CompletableFuture<Void> {
+    fun paymentCancelled(event: PaymentCancelledEvent) {
         try {
             val message = objectMapper.writeValueAsString(event)
             log.info("이벤트 발행 시작: $event")
 
-            return kafkaTemplate.send("payment-cancelled", message)
-                .thenRun {log.info("이벤트 발행 완료: $event")}
-                .exceptionally { throwable ->
-                    log.error("이벤트 발행 실패: $event", throwable)
-                    throw throwable
-                }
+            kafkaTemplate.send("payment-cancelled", message)
         } catch (e: Exception) {
-            log.error("이벤트 직렬화 실패", e)
+            log.error("결제취소 이벤트 처리 중 오류 발생", e)
             throw e
         }
     }
