@@ -3,7 +3,7 @@ package com.ddakta.location.service
 import com.ddakta.location.dto.NearbyDriverDto
 import com.ddakta.location.repository.RedisGeoLocationRepository
 import com.uber.h3core.H3Core
-import mu.KotlinLogging
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -12,7 +12,7 @@ class LocationService(
     private val redisGeoLocationRepository: RedisGeoLocationRepository
 ) {
 
-    private val logger = KotlinLogging.logger {}
+    private val logger = LoggerFactory.getLogger(this.javaClass)
     private val h3 = H3Core.newInstance()
 
     /**
@@ -37,7 +37,7 @@ class LocationService(
         redisGeoLocationRepository.updateLocation(
             driverId, latitude, longitude, h3Index, oldH3Index
         )
-        logger.debug { "Driver $driverId location updated to H3: $h3Index" }
+        logger.debug ( "Driver $driverId location updated to H3: $h3Index" )
     }
 
     /**
@@ -47,7 +47,7 @@ class LocationService(
      * @return 주변 드라이버 리스트
      */
     fun findDriversInH3Cells(h3Index: String, kRingSize: Int): List<NearbyDriverDto> {
-        val nearbyH3Indexes = h3.kRing(h3Index, kRingSize)
+                val nearbyH3Indexes = h3.gridDisk(h3Index, kRingSize)
         val nearbyDriverIds = mutableSetOf<String>()
 
         nearbyH3Indexes.forEach { h3Cell ->
@@ -65,14 +65,14 @@ class LocationService(
             if (locationData != null) {
                 nearbyDrivers.add(
                     NearbyDriverDto(
-                        driverId = UUID.fromString(driverId),
+                        driverId = UUID.fromString(driverId).toString(),
                         latitude = (locationData["latitude"] as String).toDouble(),
                         longitude = (locationData["longitude"] as String).toDouble()
                     )
                 )
             }
         }
-        logger.info { "Found ${nearbyDrivers.size} nearby drivers for H3 $h3Index (k=$kRingSize)" }
+        logger.info ("Found ${nearbyDrivers.size} nearby drivers for H3 $h3Index (k=$kRingSize)" )
         return nearbyDrivers
     }
 
@@ -83,14 +83,14 @@ class LocationService(
      */
     fun updateDriverStatus(driverId: String, status: String) {
         redisGeoLocationRepository.updateDriverStatus(driverId, status)
-        logger.info { "Driver $driverId status updated to $status" }
+        logger.info( "Driver $driverId status updated to $status"  )
 
         // OFFLINE 또는 BUSY 상태가 되면 위치 정보도 삭제
         if (status == "OFFLINE" || status == "BUSY") {
             val locationData = redisGeoLocationRepository.getDriverLocation(driverId)
             val h3Index = locationData?.get("h3Index") as? String
             redisGeoLocationRepository.removeDriverLocation(driverId, h3Index)
-            logger.info { "Removed location data for driver $driverId due to status change" }
+            logger.info( "Removed location data for driver $driverId due to status change" )
         }
     }
 }

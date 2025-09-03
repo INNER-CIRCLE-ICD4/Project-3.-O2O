@@ -9,8 +9,9 @@ import java.util.UUID
 @Component
 class MatchingServiceClient(
     private val restTemplate: RestTemplate,
-    @Value("${matching.service.api.url}") private val matchingServiceApiUrl: String
 ) {
+    @Value("\${matching.service.api.url}")
+    private lateinit var matchingServiceApiUrl: String
 
     private val logger = KotlinLogging.logger {}
 

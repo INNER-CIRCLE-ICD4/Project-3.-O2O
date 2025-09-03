@@ -90,7 +90,7 @@ class PaymentService(
             log.info("결제 취소 완료. paymentId: $paymentId")
             // 이벤트 발행
             paymentEventProvider.paymentCancelled(PaymentCancelledEvent(
-                matchId = payment.matchId,
+                matchId = UUID.fromString(payment.matchId.toString()),
                 userId = payment.userId.toString(),
                 reason = "사용자 요청"
             ))

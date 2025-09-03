@@ -7,5 +7,5 @@ import java.util.UUID
 interface PaymentRepository: JpaRepository<Payment, Long> {
     fun findByPaymentId(paymentId: String): Payment?
     fun findByMatchId(matchId: Long): Payment?
-    fun findByUserId(matchId: UUID): List<Payment>
+        fun findByUserId(userId: UUID): List<Payment>
 }

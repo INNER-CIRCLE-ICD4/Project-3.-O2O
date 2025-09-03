@@ -59,4 +59,13 @@ class Payment(
     fun isFailed(): Boolean {
         return this.status == PaymentStatus.FAILED
     }
+
+    fun isCancelled(): Boolean {
+        return this.status == PaymentStatus.CANCELLED
+    }
+
+    fun cancel() {
+        require(this.status == PaymentStatus.SUCCESS) {"성공한 결제만 취소할 수 있습니다."}
+        this.status = PaymentStatus.CANCELLED
+    }
 }

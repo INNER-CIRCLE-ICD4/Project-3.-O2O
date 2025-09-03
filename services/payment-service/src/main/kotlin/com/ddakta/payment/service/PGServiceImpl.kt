@@ -24,7 +24,8 @@ class PGServiceImpl(
         // 실제 PG라면 여기서 외부 API를 호출하고, PG는 나중에 웹훅을 보낸다.
         // Mock 구현이므로, 즉시 성공했다고 가정하고 시스템에 바로 알린다.
         log.info("[Mock PG] 결제 요청이 즉시 성공했다고 가정하고, 성공 웹훅을 시뮬레이션합니다.")
-        paymentService.paymentSuccess(payment.paymentId)
+        payment.updatePaymentId(mockPgTransactionId)
+        paymentService.paymentSuccess(mockPgTransactionId)
 
         return mockPgTransactionId
     }

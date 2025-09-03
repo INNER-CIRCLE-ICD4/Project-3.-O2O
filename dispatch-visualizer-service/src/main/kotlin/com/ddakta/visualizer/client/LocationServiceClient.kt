@@ -1,22 +1,25 @@
 package com.ddakta.visualizer.client
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import jakarta.annotation.PostConstruct
+import jakarta.annotation.PreDestroy
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.client.WebSocketConnectionManager
 import org.springframework.web.socket.client.standard.StandardWebSocketClient
 import org.springframework.web.socket.handler.TextWebSocketHandler
-import javax.annotation.PostConstruct
-import javax.annotation.PreDestroy
 
 @Component
 class LocationServiceClient(
-    private val objectMapper: ObjectMapper,
-    @Value("${location.service.ws.url}") private val locationServiceWsUrl: String
+    private val objectMapper: ObjectMapper
 ) : TextWebSocketHandler() {
+
+    @Value("\${location.service.ws.url}")
+    private lateinit var locationServiceWsUrl: String
 
     private val logger = KotlinLogging.logger {}
     private lateinit var session: WebSocketSession
