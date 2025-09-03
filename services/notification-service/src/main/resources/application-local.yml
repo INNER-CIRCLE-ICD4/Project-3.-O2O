@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ddakta_db
+    username: ddakta_user
+    password: ddakta_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+kafka:
+  bootstrap-servers: localhost:9092
+
+redis:
+  host: localhost
+  port: 6379
+
+eureka:
+  client:
+    enabled: false
+

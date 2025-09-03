@@ -20,6 +20,9 @@ dependencies {
 
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
 
+    // Database driver for docker-compose Postgres
+    runtimeOnly("org.postgresql:postgresql")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation("org.assertj:assertj-core:3.24.2")
@@ -33,4 +36,3 @@ tasks.bootJar {
     enabled = true
     mainClass.set("com.ddakta.notification.NotificationApplicationKt")
 }
-

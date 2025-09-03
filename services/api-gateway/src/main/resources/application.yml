@@ -29,10 +29,14 @@ spring:
               predicates:
                 - Path=/api/v1/payments/**
 
+            - id: NOTIFICATION-SERVICE
+              uri: http://localhost:8080
+              predicates:
+                - Path=/api/notifications, /api/notifications/**
+
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
-
