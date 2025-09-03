@@ -3,7 +3,6 @@
 plugins {
     kotlin("jvm") version "1.9.21"
     kotlin("plugin.spring") version "1.9.21"
-    kotlin("plugin.jpa") version "1.9.21"
     id("org.springframework.boot") version "3.2.0"
     id("io.spring.dependency-management") version "1.1.4"
 }
@@ -18,38 +17,22 @@ repositories {
 
 dependencies {
     // 공통 모듈
-    implementation(project(":common:domain"))
     implementation(project(":common:utils"))
 
     // Spring Core
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.kafka:spring-kafka")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
-    runtimeOnly("org.postgresql:postgresql")
 
-    // JSON / JWT
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
     // Test dependencies
-    testImplementation("org.springframework.boot:spring-boot-starter-test") {
-        // JUnit4(Vintage) 제외 → JUnit5만 사용
-        exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
-    }
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:postgresql:1.19.3")
-    testImplementation("org.testcontainers:testcontainers:1.19.3")
-    testImplementation("org.testcontainers:junit-jupiter:1.19.3")
     testImplementation("org.mockito:mockito-core:5.7.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
-    testRuntimeOnly("com.h2database:h2")
     testImplementation(kotlin("test"))
 
     // H3 library for geospatial indexing

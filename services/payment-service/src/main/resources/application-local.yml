@@ -24,19 +24,19 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       auto-offset-reset: earliest
 
-ddakta:
-  user-client:
-    enabled: true
-  auth-service:
-    url: http://auth-service:8080
-  jwt:
-    secret: ${JWT_SECRET}
+#ddakta:
+#  user-client:
+#    enabled: true
+#  auth-service:
+#    url: http://auth-service:8080
+#  jwt:
+#    secret: ${JWT_SECRET}
 #  docker:
 #    compose:
 #      lifecycle-management: start_only
 
 server:
-  port: 8080
+  port: 8081
 springdoc:
   api-docs:
     path: /api-docs

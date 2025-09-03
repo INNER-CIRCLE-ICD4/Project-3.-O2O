@@ -11,13 +11,13 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @EnableWebSocket
 class WebSocketConfig(
     private val handler: LocationWebSocketHandler,
-    private val interceptor: JwtHandshakeInterceptor,
+//    private val interceptor: JwtHandshakeInterceptor,
     @Value("\${app.ws.allowed-origins}") private val allowedOrigins: String
 ) : WebSocketConfigurer {
     override fun registerWebSocketHandlers(registry: WebSocketHandlerRegistry) {
         registry
             .addHandler(handler, "/ws/locations")
-            .addInterceptors(interceptor)
+//            .addInterceptors(interceptor)
             .setAllowedOrigins(*allowedOrigins.split(",").map(String::trim).toTypedArray())
     }
 }
